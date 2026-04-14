@@ -1,6 +1,5 @@
-package com.v.mynotes.ui.theme
+package com.v.v_notes.ui.theme
 
-import android.app.Activity
 import android.os.Build
 import androidx.compose.foundation.isSystemInDarkTheme
 import androidx.compose.material3.MaterialTheme

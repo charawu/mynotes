@@ -1,4 +1,4 @@
-package com.v.mynotes
+package com.v.v_notes
 
 import org.junit.Test
 

@@ -1,4 +1,4 @@
-package com.v.mynotes.ui.theme
+package com.v.v_notes.ui.theme
 
 import androidx.compose.material3.Typography
 import androidx.compose.ui.text.TextStyle
