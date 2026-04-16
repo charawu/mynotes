@@ -6,6 +6,7 @@ import android.widget.Toast
 import androidx.activity.ComponentActivity
 import androidx.activity.compose.setContent
 import androidx.activity.enableEdgeToEdge
+import androidx.compose.animation.core.tween
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
@@ -16,6 +17,7 @@ import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.statusBarsPadding
 import androidx.compose.foundation.layout.wrapContentSize
 import androidx.compose.foundation.shape.RoundedCornerShape
@@ -40,6 +42,10 @@ import androidx.compose.ui.text.style.LineHeightStyle
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.tooling.preview.PreviewScreenSizes
 import androidx.compose.ui.unit.dp
+import androidx.window.embedding.EmbeddingBounds
+import com.v.v_notes.components.AddButton
+import com.v.v_notes.components.AddButtonList
+
 import com.v.v_notes.components.Menu
 import com.v.v_notes.ui.theme.MyNotesTheme
 
@@ -68,17 +74,12 @@ fun MyNotesApp() {
     val context = LocalContext.current
 
     var isMenuExpanded by remember { mutableStateOf(false) }
-    var selectedItem by remember { mutableIntStateOf(1) }
-    var menuItems = mapOf(
-        1 to "记事",
-        2 to "提醒",
-        3 to "已归档",
-        4 to "设置"
-    )
+    var selectedItem by remember { mutableIntStateOf(2) }
 
-    Column(
 
-    ) {
+    var isActive by remember { mutableStateOf(false) }
+
+    Column() {
         Row(
             modifier = Modifier
                 .padding(5.dp)
@@ -94,7 +95,7 @@ fun MyNotesApp() {
             ) {
                 Icon(
                     painter = painterResource(R.drawable.baseline_menu_24),
-                    contentDescription = null
+                    contentDescription = "menu"
                 )
             }
 
@@ -173,29 +174,60 @@ fun MyNotesApp() {
 
                 when (itemId) {
                     1 -> {
-
+                        selectedItem = 1
                     }
 
                     2 -> {
-
+                        selectedItem = 2
                     }
 
                     3 -> {
-
+                        selectedItem = 3
                     }
 
                     4 -> {
-
+                        selectedItem = 4
                     }
-                    5 ->{
-                        Toast.makeText(context,"text1", Toast.LENGTH_SHORT).show()
+
+                    5 -> {
+                        selectedItem = 5
+                        Toast.makeText(context, "text1", Toast.LENGTH_SHORT).show()
                     }
                 }
-            }
+            },
+            selectedItem = selectedItem
         )
-    }
 
+
+        Box(
+            modifier = Modifier.fillMaxSize()
+        ) {
+            Box(
+                modifier = Modifier.fillMaxSize(),
+                contentAlignment = Alignment.BottomEnd
+            ) {
+                // 放置在按钮上方
+                Column(
+                    modifier = Modifier
+                        .align(Alignment.BottomEnd)
+                        .padding(end = 30.dp, bottom = 105.dp) // 调整位置
+                ) {
+                    AddButtonList(expanded = isActive)
+                }
+
+                // 添加按钮
+                AddButton(
+                    modifier = Modifier
+                        .align(Alignment.BottomEnd)
+                        .padding(40.dp),
+                    isActive = isActive,
+                    onToggle = { isActive = it }
+                )
+            }
+        }
+    }
 }
+
 
 @Preview(showBackground = true)
 @Composable

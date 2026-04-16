@@ -1,5 +1,7 @@
 package com.v.v_notes.components
 
+import androidx.compose.foundation.background
+import androidx.compose.foundation.border
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Spacer
@@ -9,9 +11,11 @@ import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.statusBarsPadding
 import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.layout.wrapContentSize
+import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material3.DropdownMenu
 import androidx.compose.material3.DropdownMenuItem
 import androidx.compose.material3.Icon
+import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
@@ -22,6 +26,7 @@ import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.tooling.preview.Preview
@@ -33,12 +38,10 @@ import com.v.v_notes.ui.theme.MyNotesTheme
 fun Menu(
     modifier: Modifier = Modifier,
     expanded: Boolean = false,
-
-    onDismissRequest:() -> Unit = {},
-    selectedItem:Int = 1,
-    onItemSelected:(Int) -> Unit = {}
+    onDismissRequest: () -> Unit = {},
+    selectedItem: Int = 1,
+    onItemSelected: (Int) -> Unit = {}
 ) {
-
     Box(
         modifier = modifier
     ) {
@@ -47,65 +50,143 @@ fun Menu(
             expanded = expanded,
             onDismissRequest = onDismissRequest
         ) {
-            DropdownMenuItem(
-                text = {Text(stringResource(R.string.keep))},
-
-                onClick = {
-                    onItemSelected(1)
-                    onDismissRequest()
-                },
-                leadingIcon = {
-                    Icon(
-                        painter = painterResource(R.drawable.outline_lightbulb_24),
-                        contentDescription = null
+            // 1. Keep
+            Box(
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .padding(all = 5.dp)
+                    .background(
+                        if (selectedItem == 1) MaterialTheme.colorScheme.primary else Color.Transparent,
+                        shape = RoundedCornerShape(10.dp)
                     )
-                }
-            )
 
-            DropdownMenuItem(
-                text = {Text(stringResource(R.string.alert))},
-                onClick = {
-                    onItemSelected(2)
-                    onDismissRequest()
-                },
-                leadingIcon = {
-                    Icon(
-                        painter = painterResource(R.drawable.baseline_notifications_none_24),
-                        contentDescription = null
+            ) {
+                DropdownMenuItem(
+                    text = { Text(
+                        stringResource(R.string.keep),
+                        color = if (selectedItem == 1) MaterialTheme.colorScheme.onPrimary
+                        else MaterialTheme.colorScheme.onBackground
+                        ) },
+                    onClick = {
+                        onItemSelected(1)
+                        onDismissRequest()
+                    },
+                    leadingIcon = {
+                        Icon(
+                            painter = painterResource(R.drawable.outline_lightbulb_24),
+                            tint = if (selectedItem == 1) MaterialTheme.colorScheme.onPrimary
+                            else MaterialTheme.colorScheme.onBackground,
+                            contentDescription = null
+                        )
+                    },
+                    modifier = Modifier.fillMaxWidth()
+                )
+            }
+
+            // 2. Alert
+            Box(
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .padding(all = 5.dp)
+                    .background(
+                        if (selectedItem == 2) MaterialTheme.colorScheme.primary else Color.Transparent,
+                        shape = RoundedCornerShape(10.dp)
                     )
-                }
-            )
 
-            DropdownMenuItem(
-                text = {Text(stringResource(R.string.archive))},
-                onClick = {
-                    onItemSelected(3)
-                    onDismissRequest()
-                },
-                leadingIcon = {
-                    Icon(
-                        painter = painterResource(R.drawable.outline_archive_24),
-                        contentDescription = null
+            ) {
+                DropdownMenuItem(
+                    text = { Text(
+                        stringResource(R.string.alert),
+                        color = if (selectedItem == 2) MaterialTheme.colorScheme.onPrimary
+                        else MaterialTheme.colorScheme.onBackground
+                    ) },
+                    onClick = {
+                        onItemSelected(2)
+                        onDismissRequest()
+                    },
+                    leadingIcon = {
+                        Icon(
+                            painter = painterResource(R.drawable.baseline_notifications_none_24),
+                            tint = if (selectedItem == 2) MaterialTheme.colorScheme.onPrimary
+                            else MaterialTheme.colorScheme.onBackground,
+                            contentDescription = null
+                        )
+                    },
+                    modifier = Modifier.fillMaxWidth()
+                )
+            }
+
+            // 3. Archive
+            Box(
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .padding(all = 5.dp)
+                    .background(
+                        if (selectedItem == 3) MaterialTheme.colorScheme.primary else Color.Transparent,
+                        shape = RoundedCornerShape(10.dp)
                     )
-                }
-            )
 
-            DropdownMenuItem(
-                text = {Text(stringResource(R.string.rash))},
-                onClick = {
-                    onItemSelected(4)
-                    onDismissRequest()
-                },
-                leadingIcon = {
-                    Icon(
-                        painter = painterResource(R.drawable.outline_delete_forever_24),
-                        contentDescription = null
+            ) {
+                DropdownMenuItem(
+                    text = { Text(
+                        stringResource(R.string.archive),
+                        color = if (selectedItem == 3) MaterialTheme.colorScheme.onPrimary
+                        else MaterialTheme.colorScheme.onBackground
+                    ) },
+                    onClick = {
+                        onItemSelected(3)
+                        onDismissRequest()
+                    },
+                    leadingIcon = {
+                        Icon(
+                            painter = painterResource(R.drawable.outline_archive_24),
+                            tint = if (selectedItem == 3) MaterialTheme.colorScheme.onPrimary
+                            else MaterialTheme.colorScheme.onBackground,
+                            contentDescription = null
+                        )
+                    },
+                    modifier = Modifier.fillMaxWidth()
+                )
+            }
+
+            // 4. Trash
+            Box(
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .padding(all = 5.dp)
+                    .background(
+                        if (selectedItem == 4) MaterialTheme.colorScheme.primary else Color.Transparent,
+                        shape = RoundedCornerShape(10.dp)
                     )
-                }
-            )
 
+            ) {
+                DropdownMenuItem(
+                    text = { Text(
+                        stringResource(R.string.rash),
+                        color = if (selectedItem == 4) MaterialTheme.colorScheme.onPrimary
+                        else MaterialTheme.colorScheme.onBackground
+                    ) },
+                    onClick = {
+                        onItemSelected(4)
+                        onDismissRequest()
+                    },
+                    leadingIcon = {
+                        Icon(
+                            painter = painterResource(R.drawable.outline_delete_forever_24),
+                            tint = if (selectedItem == 4) MaterialTheme.colorScheme.onPrimary
+                            else MaterialTheme.colorScheme.onBackground,
+                            contentDescription = null
+                        )
+                    },
+                    modifier = Modifier.fillMaxWidth()
+                )
+            }
+
+            // 5. Setting (最后一个，不添加选中框)
             DropdownMenuItem(
-                text = {Text(stringResource(R.string.setting))},
+                modifier = Modifier
+                    .padding(all = 5.dp),
+                text = { Text(stringResource(R.string.setting)) },
                 onClick = {
                     onItemSelected(5)
                     onDismissRequest()
@@ -119,17 +200,23 @@ fun Menu(
             )
         }
     }
-
 }
 
 @Preview(showBackground = true)
 @Composable
 fun MenuPreview() {
-    MyNotesTheme{
-        Column() {
+    MyNotesTheme {
+        Column {
+            var selectedItem by remember { mutableIntStateOf(2) }
+            var expanded by remember { mutableStateOf(true) }
+
             Menu(
-                expanded = true,
-                selectedItem = 2
+                expanded = expanded,
+                selectedItem = selectedItem,
+                onDismissRequest = { expanded = false },
+                onItemSelected = { index ->
+                    selectedItem = index
+                }
             )
         }
     }
