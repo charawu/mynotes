@@ -174,7 +174,7 @@ fun Menu(
                 )
             }
 
-            // 5. Setting (最后一个，不添加选中框)
+            // 5. Setting (不添加选中框)
             DropdownMenuItem(
                 modifier = Modifier
                     .padding(all = 5.dp),

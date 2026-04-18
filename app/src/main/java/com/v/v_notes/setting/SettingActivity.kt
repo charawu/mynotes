@@ -32,6 +32,7 @@ import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
 import com.v.v_notes.R
+import com.v.v_notes.components.SwitchListItem
 import com.v.v_notes.control.SettingsManager
 import com.v.v_notes.ui.theme.MyNotesTheme
 
@@ -62,14 +63,9 @@ fun SettingActivityScreen(
     onBackClick: () -> Unit
 ) {
 
-    var checked by remember { mutableStateOf(false) }
-
-    checked = SettingsManager.getBoolean("fixed_menu", false)
-
     Column(
         modifier = Modifier
             .fillMaxSize()
-            .padding(bottom = 20.dp)
             .statusBarsPadding()
     ) {
         Row(
@@ -93,72 +89,25 @@ fun SettingActivityScreen(
             )
         }
 
-
-        Card(
+        Column(
             modifier = Modifier
-                .fillMaxWidth()
-                .padding(all = 5.dp)
+                .padding(16.dp)
         ) {
+            var checked by remember { mutableStateOf(false) }
 
-            Row() {
-                Icon(
-                    modifier = Modifier
-                        .weight(0.2f)
-                        .align(Alignment.CenterVertically),
-                    painter = painterResource(R.drawable.outline_horizontal_split_24),
-                    contentDescription = null
-                )
+            checked = SettingsManager.getBoolean("fixed_menu",false)
 
-                Column(
-                    modifier = Modifier
-                        .weight(0.8f)
-                        .align(Alignment.CenterVertically)
-                ) {
-                    Text(
-                        style = MaterialTheme.typography.titleMedium,
-                        text = stringResource(R.string.setting_fixed_menu)
-                    )
-
-                    Text(
-                        style = MaterialTheme.typography.titleSmall,
-                        text = stringResource(R.string.setting_fixed_menu1)
-                    )
+            SwitchListItem(
+                leadingIcon = painterResource(R.drawable.outline_horizontal_split_24),
+                title = stringResource(R.string.setting_fixed_menu),
+                subtitle = stringResource(R.string.setting_fixed_menu1),
+                checked =checked,
+                onCheckedChange = {newState ->
+                    checked = newState
+                    SettingsManager.putBoolean("fixed_menu",newState)
                 }
-
-
-
-                Switch(
-                    modifier = Modifier
-                        .padding(10.dp)
-                        .weight(0.2f)
-                        .align(Alignment.CenterVertically),
-                    checked = checked,
-                    onCheckedChange = {
-                        checked = it
-                        SettingsManager.putBoolean("fixed_menu", checked)
-                    },
-                    thumbContent = if (checked) {
-                        {
-                            Icon(
-                                painter = painterResource(R.drawable.outline_done_24),
-                                contentDescription = null,
-                                modifier = Modifier.size(SwitchDefaults.IconSize),
-                            )
-                        }
-                    } else {
-                        {
-                            Icon(
-                                painter = painterResource(R.drawable.outline_close_24),
-                                contentDescription = null,
-                                modifier = Modifier.size(SwitchDefaults.IconSize),
-                            )
-                        }
-                    }
-                )
-            }
-
+            )
         }
-
     }
 }
 

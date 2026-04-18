@@ -29,6 +29,13 @@
             android:theme="@style/Theme.MyNotes">
 
         </activity>
+
+        <activity android:name=".addlist.EditActivity"
+            android:exported="false"
+            android:windowSoftInputMode="adjustResize"
+            android:theme="@style/Theme.MyNotes">
+
+        </activity>
     </application>
 
 </manifest>
