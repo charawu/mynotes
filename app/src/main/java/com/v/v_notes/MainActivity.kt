@@ -1,32 +1,28 @@
 package com.v.v_notes
 
-import android.content.Context
+import android.content.Intent
 import android.os.Bundle
-import android.widget.Toast
 import androidx.activity.ComponentActivity
 import androidx.activity.compose.setContent
 import androidx.activity.enableEdgeToEdge
-import androidx.compose.animation.core.tween
+import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
-import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
-import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
-import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.statusBarsPadding
 import androidx.compose.foundation.layout.wrapContentSize
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material3.Card
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
+import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
-import androidx.compose.material3.TextButton
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableIntStateOf
@@ -38,15 +34,14 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.res.stringResource
-import androidx.compose.ui.text.style.LineHeightStyle
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.tooling.preview.PreviewScreenSizes
 import androidx.compose.ui.unit.dp
-import androidx.window.embedding.EmbeddingBounds
 import com.v.v_notes.components.AddButton
 import com.v.v_notes.components.AddButtonList
 
 import com.v.v_notes.components.Menu
+import com.v.v_notes.setting.SettingActivity
 import com.v.v_notes.ui.theme.MyNotesTheme
 
 class MainActivity : ComponentActivity() {
@@ -57,6 +52,7 @@ class MainActivity : ComponentActivity() {
             MyNotesTheme {
                 Surface(
                     modifier = Modifier.fillMaxSize()
+                        .background(MaterialTheme.colorScheme.background)
                 ) {
                     MyNotesApp()
                 }
@@ -74,7 +70,7 @@ fun MyNotesApp() {
     val context = LocalContext.current
 
     var isMenuExpanded by remember { mutableStateOf(false) }
-    var selectedItem by remember { mutableIntStateOf(2) }
+    var selectedItem by remember { mutableIntStateOf(1) }
 
 
     var isActive by remember { mutableStateOf(false) }
@@ -125,13 +121,15 @@ fun MyNotesApp() {
                             modifier = Modifier
                                 .padding(start = 10.dp)
                                 .weight(0.5f),
-                            text = stringResource(R.string.search_box)
+                            text = stringResource(R.string.search_box),
+                            color = MaterialTheme.colorScheme.primary
                         )
 
                         IconButton(
                             onClick = {}
                         ) {
                             Icon(
+                                tint = MaterialTheme.colorScheme.primary,
                                 painter = painterResource(R.drawable.baseline_splitscreen_24),
                                 contentDescription = null
                             )
@@ -141,6 +139,7 @@ fun MyNotesApp() {
                             onClick = {}
                         ) {
                             Icon(
+                                tint = MaterialTheme.colorScheme.primary,
                                 painter = painterResource(R.drawable.baseline_import_export_24),
                                 contentDescription = null
                             )
@@ -191,7 +190,8 @@ fun MyNotesApp() {
 
                     5 -> {
                         selectedItem = 5
-                        Toast.makeText(context, "text1", Toast.LENGTH_SHORT).show()
+                        val intent = Intent(context, SettingActivity::class.java)
+                        context.startActivity(intent)
                     }
                 }
             },
@@ -232,5 +232,8 @@ fun MyNotesApp() {
 @Preview(showBackground = true)
 @Composable
 fun GreetingPreview() {
-    MyNotesApp()
+    MyNotesTheme(
+    ){
+        MyNotesApp()
+    }
 }

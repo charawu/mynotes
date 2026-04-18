@@ -4,7 +4,6 @@ import androidx.compose.animation.core.animateFloatAsState
 import androidx.compose.animation.core.tween
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Box
-import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material3.Icon
@@ -15,7 +14,6 @@ import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
-import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.draw.rotate
@@ -23,6 +21,7 @@ import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
 import com.v.v_notes.R
+import com.v.v_notes.ui.theme.MyNotesTheme
 
 @Composable
 fun AddButton(
@@ -77,13 +76,15 @@ fun AddButtonPreview() {
     Box(
 
     ) {
-        AddButton(
-            modifier = Modifier
-                .size(48.dp),
-            isActive = isActive,
-            onToggle = { newState ->
-                isActive = newState
-            }
-        )
+        MyNotesTheme() {
+            AddButton(
+                modifier = Modifier
+                    .size(48.dp),
+                isActive = isActive,
+                onToggle = { newState ->
+                    isActive = newState
+                }
+            )
+        }
     }
 }

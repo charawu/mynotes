@@ -6,11 +6,14 @@
     <string name="keep">记事</string>
     <string name="alert">提醒</string>
     <string name="archive">已归档</string>
-    <string name="rash">回收站</string>
+    <string name="trash">回收站</string>
     <string name="setting">设置</string>
     
     <string name="add_menu_photo">图片</string>
     <string name="add_menu_draw">绘图</string>
     <string name="add_menu_todo">待办</string>
     <string name="add_menu_text">文本</string>
+    
+    <string name="setting_fixed_menu">固定菜单</string>
+    <string name="setting_fixed_menu1">将菜单固定到底部</string>
 </resources>

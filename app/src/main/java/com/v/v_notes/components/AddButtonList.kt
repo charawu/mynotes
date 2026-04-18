@@ -1,6 +1,5 @@
 package com.v.v_notes.components
 
-import android.widget.ImageButton
 import androidx.compose.animation.*
 import androidx.compose.animation.core.*
 import androidx.compose.foundation.background
@@ -197,14 +196,14 @@ fun AddButtonList(
             enter = fadeIn(
                 animationSpec = tween(
                     durationMillis = 300,
-                    delayMillis = animationDelay * 0,
+                    delayMillis = 0,
                     easing = FastOutSlowInEasing
                 )
             ) + scaleIn(
                 initialScale = 0.5f,
                 animationSpec = tween(
                     durationMillis = 300,
-                    delayMillis = animationDelay * 0,
+                    delayMillis = 0,
                     easing = FastOutSlowInEasing
                 )
             ),
