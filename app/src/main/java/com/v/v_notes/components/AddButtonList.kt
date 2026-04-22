@@ -3,6 +3,7 @@ package com.v.v_notes.components
 import androidx.compose.animation.*
 import androidx.compose.animation.core.*
 import androidx.compose.foundation.background
+import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material3.Icon
@@ -34,7 +35,7 @@ fun AddButtonList(
     Column() {
         val modifier: Modifier = Modifier
             .clip(shape = RoundedCornerShape(18.dp))
-            .background(color = MaterialTheme.colorScheme.primary)
+            .background(color = MaterialTheme.colorScheme.inversePrimary)
             .padding(end = 5.dp)
 
 
@@ -62,7 +63,10 @@ fun AddButtonList(
             )
         ) {
             Box(
-                modifier = modifier,
+                modifier = modifier
+                    .clickable(
+                        onClick = onPhotoClick
+                    ),
                 contentAlignment = Alignment.Center
             ) {
                 Row(
@@ -73,14 +77,12 @@ fun AddButtonList(
                         modifier = Modifier
                     ) {
                         Icon(
-                            tint = MaterialTheme.colorScheme.onPrimary,
                             painter = painterResource(R.drawable.outline_insert_photo_24),
                             contentDescription = null
                         )
                     }
                     Text(
-                        color = MaterialTheme.colorScheme.onPrimary,
-                        modifier = modifier,
+                        modifier = Modifier.padding(end = 5.dp),
                         text = stringResource(R.string.add_menu_photo)
                     )
                 }
@@ -113,7 +115,10 @@ fun AddButtonList(
             )
         ) {
             Box(
-                modifier = modifier,
+                modifier = modifier
+                    .clickable(
+                        onClick = onDrawClick
+                    ),
                 contentAlignment = Alignment.Center
             ) {
                 Row(
@@ -124,14 +129,12 @@ fun AddButtonList(
                         modifier = Modifier
                     ) {
                         Icon(
-                            tint = MaterialTheme.colorScheme.onPrimary,
                             painter = painterResource(R.drawable.outline_draw_24),
                             contentDescription = null
                         )
                     }
                     Text(
-                        color = MaterialTheme.colorScheme.onPrimary,
-                        modifier = modifier,
+                        modifier = Modifier.padding(end = 5.dp),
                         text = stringResource(R.string.add_menu_draw)
                     )
                 }
@@ -164,7 +167,10 @@ fun AddButtonList(
             )
         ) {
             Box(
-                modifier = modifier,
+                modifier = modifier
+                    .clickable(
+                        onClick = onCheckClick
+                    ),
                 contentAlignment = Alignment.Center
             ) {
                 Row(
@@ -175,14 +181,12 @@ fun AddButtonList(
                         modifier = Modifier
                     ) {
                         Icon(
-                            tint = MaterialTheme.colorScheme.onPrimary,
                             painter = painterResource(R.drawable.outline_check_box_24),
                             contentDescription = null
                         )
                     }
                     Text(
-                        color = MaterialTheme.colorScheme.onPrimary,
-                        modifier = modifier,
+                        modifier = Modifier.padding(end = 5.dp),
                         text = stringResource(R.string.add_menu_todo)
                     )
                 }
@@ -215,7 +219,10 @@ fun AddButtonList(
             )
         ) {
             Box(
-                modifier = modifier,
+                modifier = modifier
+                    .clickable(
+                        onClick = onTextClick
+                    ),
                 contentAlignment = Alignment.Center
             ) {
                 Row(
@@ -226,14 +233,12 @@ fun AddButtonList(
                         modifier = Modifier
                     ) {
                         Icon(
-                            tint = MaterialTheme.colorScheme.onPrimary,
                             painter = painterResource(R.drawable.outline_text_fields_24),
                             contentDescription = null
                         )
                     }
                     Text(
-                        color = MaterialTheme.colorScheme.onPrimary,
-                        modifier = modifier,
+                        modifier = Modifier.padding(end = 5.dp),
                         text = stringResource(R.string.add_menu_text)
                     )
                 }

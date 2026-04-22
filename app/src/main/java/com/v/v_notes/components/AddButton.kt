@@ -43,7 +43,7 @@ fun AddButton(
                 shape = RoundedCornerShape(18.dp)
             )
             .background(
-                color = MaterialTheme.colorScheme.primary
+                color = MaterialTheme.colorScheme.inversePrimary
             )
     ) {
         IconButton(
@@ -58,7 +58,6 @@ fun AddButton(
             Icon(
                 painter = painterResource(id = R.drawable.baseline_add_24),
                 contentDescription = if (isActive) "close" else "add",
-                tint = MaterialTheme.colorScheme.onPrimary,
                 modifier = Modifier
                     .size(35.dp)
                     .rotate(rotationAngle)

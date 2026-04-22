@@ -1,6 +1,11 @@
 <resources>
     <string name="app_name">Quick Notes</string>
     
+    <string name="V_creator">https://github.com/charawu</string>
+    <string name="V_others">https://github.com/MohamedRejeb/Compose-Rich-Editor</string>
+    <string name="V_detailed">这一切都离不开每一位开源作者的努力!</string>
+    <string name="V_more">by v</string>
+    
     <string name="search_box">搜索  Nots</string>
     
     <string name="keep">记事</string>
@@ -16,4 +21,6 @@
     
     <string name="setting_fixed_menu">固定菜单</string>
     <string name="setting_fixed_menu1">将菜单固定到底部</string>
+
+    <string name="edit_title">标题</string>
 </resources>
