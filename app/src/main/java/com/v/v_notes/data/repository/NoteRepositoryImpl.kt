@@ -70,4 +70,45 @@ class NoteRepositoryImpl(
             notes.forEach { noteDao.deleteNote(it) }
         }
     }
+
+    // 1. 获取不同状态的笔记列表
+    override fun getAllArchivedNotes(): Flow<List<Note>> = noteDao.getAllArchivedNotes()
+    override fun getAllDeletedNotes(): Flow<List<Note>> = noteDao.getAllDeletedNotes()
+    override fun getAllPinnedNotes(): Flow<List<Note>> = noteDao.getAllPinnedNotes()
+
+    // 2. 更新笔记状态
+    override suspend fun toggleArchiveStatus(note: Note) {
+        withContext(Dispatchers.IO) {
+            // 切换归档状态
+            noteDao.updateArchiveStatus(note.id, !note.isArchived)
+        }
+    }
+
+    override suspend fun moveNoteToTrash(note: Note) {
+        withContext(Dispatchers.IO) {
+            // 移动到回收站（软删除）
+            noteDao.updateDeleteStatus(note.id, true)
+        }
+    }
+
+    override suspend fun restoreNoteFromTrash(note: Note) {
+        withContext(Dispatchers.IO) {
+            // 从回收站恢复
+            noteDao.updateDeleteStatus(note.id, false)
+        }
+    }
+
+    override suspend fun togglePinStatus(note: Note) {
+        withContext(Dispatchers.IO) {
+            // 切换置顶状态
+            noteDao.updatePinStatus(note.id, !note.isPinned)
+        }
+    }
+
+    // 3. 永久删除（清空回收站）
+    override suspend fun emptyTrash() {
+        withContext(Dispatchers.IO) {
+            noteDao.permanentlyDeleteAllTrashed()
+        }
+    }
 }

@@ -1,5 +1,6 @@
 package com.v.v_notes.components
 
+import androidx.compose.ui.graphics.Color
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
@@ -35,6 +36,7 @@ import com.v.v_notes.ui.theme.MyNotesTheme
  */
 @Composable
 fun SwitchListItem(
+    isReboot: Boolean = false,
     modifier: Modifier = Modifier,
     leadingIcon: Painter,
     title: String,
@@ -80,7 +82,11 @@ fun SwitchListItem(
                         Text(
                             style = MaterialTheme.typography.titleSmall,
                             text = it,
-                            color = MaterialTheme.colorScheme.onSurfaceVariant
+                            color = if (isReboot){
+                                Color.Red
+                            }else{
+                                MaterialTheme.colorScheme.onSurfaceVariant
+                            }
                         )
                     }
                 }

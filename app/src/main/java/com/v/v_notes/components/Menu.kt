@@ -32,7 +32,8 @@ fun Menu(
     expanded: Boolean = false,
     onDismissRequest: () -> Unit = {},
     selectedItem: Int = 1,
-    onItemSelected: (Int) -> Unit = {}
+    onItemSelected: (Int) -> Unit = {},
+    showOnlyAlertAndSetting: Boolean = false  // 新增：是否只显示提醒和设置
 ) {
     Box(
         modifier = modifier
@@ -42,139 +43,176 @@ fun Menu(
             expanded = expanded,
             onDismissRequest = onDismissRequest
         ) {
-            // 1. Keep
-            Box(
-                modifier = Modifier
-                    .fillMaxWidth()
-                    .padding(all = 5.dp)
-                    .background(
-                        if (selectedItem == 1) MaterialTheme.colorScheme.primary else Color.Transparent,
-                        shape = RoundedCornerShape(10.dp)
-                    )
+            // 如果不是只显示提醒和设置，则显示所有菜单项
+            if (!showOnlyAlertAndSetting) {
+                // 1. Keep
+                Box(
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .padding(all = 5.dp)
+                        .background(
+                            if (selectedItem == 1) MaterialTheme.colorScheme.primary else Color.Transparent,
+                            shape = RoundedCornerShape(10.dp)
+                        )
 
-            ) {
-                DropdownMenuItem(
-                    text = { Text(
-                        stringResource(R.string.keep),
-                        color = if (selectedItem == 1) MaterialTheme.colorScheme.onPrimary
-                        else MaterialTheme.colorScheme.onBackground
+                ) {
+                    DropdownMenuItem(
+                        text = { Text(
+                            stringResource(R.string.keep),
+                            color = if (selectedItem == 1) MaterialTheme.colorScheme.onPrimary
+                            else MaterialTheme.colorScheme.onBackground
                         ) },
-                    onClick = {
-                        onItemSelected(1)
-                        onDismissRequest()
-                    },
-                    leadingIcon = {
-                        Icon(
-                            painter = painterResource(R.drawable.outline_lightbulb_24),
-                            tint = if (selectedItem == 1) MaterialTheme.colorScheme.onPrimary
-                            else MaterialTheme.colorScheme.onBackground,
-                            contentDescription = null
-                        )
-                    },
-                    modifier = Modifier.fillMaxWidth()
-                )
-            }
-
-            // 2. Alert
-            Box(
-                modifier = Modifier
-                    .fillMaxWidth()
-                    .padding(all = 5.dp)
-                    .background(
-                        if (selectedItem == 2) MaterialTheme.colorScheme.primary else Color.Transparent,
-                        shape = RoundedCornerShape(10.dp)
+                        onClick = {
+                            onItemSelected(1)
+                            onDismissRequest()
+                        },
+                        leadingIcon = {
+                            Icon(
+                                painter = painterResource(R.drawable.outline_lightbulb_24),
+                                tint = if (selectedItem == 1) MaterialTheme.colorScheme.onPrimary
+                                else MaterialTheme.colorScheme.onBackground,
+                                contentDescription = null
+                            )
+                        },
+                        modifier = Modifier.fillMaxWidth()
                     )
+                }
 
-            ) {
-                DropdownMenuItem(
-                    text = { Text(
-                        stringResource(R.string.alert),
-                        color = if (selectedItem == 2) MaterialTheme.colorScheme.onPrimary
-                        else MaterialTheme.colorScheme.onBackground
-                    ) },
-                    onClick = {
-                        onItemSelected(2)
-                        onDismissRequest()
-                    },
-                    leadingIcon = {
-                        Icon(
-                            painter = painterResource(R.drawable.baseline_notifications_none_24),
-                            tint = if (selectedItem == 2) MaterialTheme.colorScheme.onPrimary
-                            else MaterialTheme.colorScheme.onBackground,
-                            contentDescription = null
+                // 2. Alert
+                Box(
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .padding(all = 5.dp)
+                        .background(
+                            if (selectedItem == 2) MaterialTheme.colorScheme.primary else Color.Transparent,
+                            shape = RoundedCornerShape(10.dp)
                         )
-                    },
-                    modifier = Modifier.fillMaxWidth()
-                )
-            }
 
-            // 3. Archive
-            Box(
-                modifier = Modifier
-                    .fillMaxWidth()
-                    .padding(all = 5.dp)
-                    .background(
-                        if (selectedItem == 3) MaterialTheme.colorScheme.primary else Color.Transparent,
-                        shape = RoundedCornerShape(10.dp)
+                ) {
+                    DropdownMenuItem(
+                        text = { Text(
+                            stringResource(R.string.alert),
+                            color = if (selectedItem == 2) MaterialTheme.colorScheme.onPrimary
+                            else MaterialTheme.colorScheme.onBackground
+                        ) },
+                        onClick = {
+                            onItemSelected(2)
+                            onDismissRequest()
+                        },
+                        leadingIcon = {
+                            Icon(
+                                painter = painterResource(R.drawable.baseline_notifications_none_24),
+                                tint = if (selectedItem == 2) MaterialTheme.colorScheme.onPrimary
+                                else MaterialTheme.colorScheme.onBackground,
+                                contentDescription = null
+                            )
+                        },
+                        modifier = Modifier.fillMaxWidth()
                     )
+                }
 
-            ) {
-                DropdownMenuItem(
-                    text = { Text(
-                        stringResource(R.string.archive),
-                        color = if (selectedItem == 3) MaterialTheme.colorScheme.onPrimary
-                        else MaterialTheme.colorScheme.onBackground
-                    ) },
-                    onClick = {
-                        onItemSelected(3)
-                        onDismissRequest()
-                    },
-                    leadingIcon = {
-                        Icon(
-                            painter = painterResource(R.drawable.outline_archive_24),
-                            tint = if (selectedItem == 3) MaterialTheme.colorScheme.onPrimary
-                            else MaterialTheme.colorScheme.onBackground,
-                            contentDescription = null
+                // 3. Archive
+                Box(
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .padding(all = 5.dp)
+                        .background(
+                            if (selectedItem == 3) MaterialTheme.colorScheme.primary else Color.Transparent,
+                            shape = RoundedCornerShape(10.dp)
                         )
-                    },
-                    modifier = Modifier.fillMaxWidth()
-                )
-            }
 
-            // 4. Trash
-            Box(
-                modifier = Modifier
-                    .fillMaxWidth()
-                    .padding(all = 5.dp)
-                    .background(
-                        if (selectedItem == 4) MaterialTheme.colorScheme.primary else Color.Transparent,
-                        shape = RoundedCornerShape(10.dp)
+                ) {
+                    DropdownMenuItem(
+                        text = { Text(
+                            stringResource(R.string.archive),
+                            color = if (selectedItem == 3) MaterialTheme.colorScheme.onPrimary
+                            else MaterialTheme.colorScheme.onBackground
+                        ) },
+                        onClick = {
+                            onItemSelected(3)
+                            onDismissRequest()
+                        },
+                        leadingIcon = {
+                            Icon(
+                                painter = painterResource(R.drawable.outline_archive_24),
+                                tint = if (selectedItem == 3) MaterialTheme.colorScheme.onPrimary
+                                else MaterialTheme.colorScheme.onBackground,
+                                contentDescription = null
+                            )
+                        },
+                        modifier = Modifier.fillMaxWidth()
                     )
+                }
 
-            ) {
-                DropdownMenuItem(
-                    text = { Text(
-                        stringResource(R.string.trash),
-                        color = if (selectedItem == 4) MaterialTheme.colorScheme.onPrimary
-                        else MaterialTheme.colorScheme.onBackground
-                    ) },
-                    onClick = {
-                        onItemSelected(4)
-                        onDismissRequest()
-                    },
-                    leadingIcon = {
-                        Icon(
-                            painter = painterResource(R.drawable.outline_delete_forever_24),
-                            tint = if (selectedItem == 4) MaterialTheme.colorScheme.onPrimary
-                            else MaterialTheme.colorScheme.onBackground,
-                            contentDescription = null
+                // 4. Trash
+                Box(
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .padding(all = 5.dp)
+                        .background(
+                            if (selectedItem == 4) MaterialTheme.colorScheme.primary else Color.Transparent,
+                            shape = RoundedCornerShape(10.dp)
                         )
-                    },
-                    modifier = Modifier.fillMaxWidth()
-                )
+
+                ) {
+                    DropdownMenuItem(
+                        text = { Text(
+                            stringResource(R.string.trash),
+                            color = if (selectedItem == 4) MaterialTheme.colorScheme.onPrimary
+                            else MaterialTheme.colorScheme.onBackground
+                        ) },
+                        onClick = {
+                            onItemSelected(4)
+                            onDismissRequest()
+                        },
+                        leadingIcon = {
+                            Icon(
+                                painter = painterResource(R.drawable.outline_delete_forever_24),
+                                tint = if (selectedItem == 4) MaterialTheme.colorScheme.onPrimary
+                                else MaterialTheme.colorScheme.onBackground,
+                                contentDescription = null
+                            )
+                        },
+                        modifier = Modifier.fillMaxWidth()
+                    )
+                }
+            } else {
+                // 如果只显示提醒和设置，则只显示这两项
+                // 1. Alert
+                Box(
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .padding(all = 5.dp)
+                        .background(
+                            if (selectedItem == 2) MaterialTheme.colorScheme.primary else Color.Transparent,
+                            shape = RoundedCornerShape(10.dp)
+                        )
+
+                ) {
+                    DropdownMenuItem(
+                        text = { Text(
+                            stringResource(R.string.alert),
+                            color = if (selectedItem == 2) MaterialTheme.colorScheme.onPrimary
+                            else MaterialTheme.colorScheme.onBackground
+                        ) },
+                        onClick = {
+                            onItemSelected(2)
+                            onDismissRequest()
+                        },
+                        leadingIcon = {
+                            Icon(
+                                painter = painterResource(R.drawable.baseline_notifications_none_24),
+                                tint = if (selectedItem == 2) MaterialTheme.colorScheme.onPrimary
+                                else MaterialTheme.colorScheme.onBackground,
+                                contentDescription = null
+                            )
+                        },
+                        modifier = Modifier.fillMaxWidth()
+                    )
+                }
             }
 
-            // 5. Setting (不添加选中框)
+            // 5. Setting (总是显示，不添加选中框)
             DropdownMenuItem(
                 modifier = Modifier
                     .padding(all = 5.dp),

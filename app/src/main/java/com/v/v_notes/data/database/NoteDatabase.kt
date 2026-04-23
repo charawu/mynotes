@@ -11,7 +11,7 @@ import com.v.v_notes.data.model.Note
 
 @Database(
     entities = [Note::class],
-    version = 1, // 数据库版本，结构改变时需要升级
+    version = 2, // 数据库版本，结构改变时需要升级
     exportSchema = false
 )
 @TypeConverters(Converters::class) // 注册类型转换器

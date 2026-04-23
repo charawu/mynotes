@@ -47,6 +47,18 @@
 
         </activity>
 
+        <activity android:name=".archive.ArchiveActivity"
+            android:exported="false"
+            android:theme="@style/Theme.MyNotes">
+
+        </activity>
+
+        <activity android:name=".trash.TrashActivity"
+
+            android:exported="false"
+            android:theme="@style/Theme.MyNotes">
+
+        </activity>
 
     </application>
 

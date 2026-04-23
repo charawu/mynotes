@@ -21,6 +21,7 @@
     
     <string name="setting_fixed_menu">固定菜单</string>
     <string name="setting_fixed_menu1">将菜单固定到底部</string>
+    <string name="is_reboot">重启软件生效!</string>
 
     <string name="edit_title">标题</string>
 </resources>

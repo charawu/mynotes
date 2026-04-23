@@ -24,4 +24,18 @@ interface NoteRepository {
     suspend fun insertNotes(notes: List<Note>)
 
     suspend fun deleteNotes(notes: List<Note>)
+
+    // 1. 获取不同状态的笔记列表
+    fun getAllArchivedNotes(): Flow<List<Note>>
+    fun getAllDeletedNotes(): Flow<List<Note>>
+    fun getAllPinnedNotes(): Flow<List<Note>>
+
+    // 2. 更新笔记状态的方法
+    suspend fun toggleArchiveStatus(note: Note)
+    suspend fun moveNoteToTrash(note: Note)
+    suspend fun restoreNoteFromTrash(note: Note)
+    suspend fun togglePinStatus(note: Note)
+
+    // 3. 永久删除（清空回收站）
+    suspend fun emptyTrash()
 }

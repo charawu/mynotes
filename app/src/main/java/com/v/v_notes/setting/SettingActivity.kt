@@ -10,15 +10,11 @@ import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.padding
-import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.statusBarsPadding
-import androidx.compose.material3.Card
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Surface
-import androidx.compose.material3.Switch
-import androidx.compose.material3.SwitchDefaults
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
@@ -63,6 +59,8 @@ fun SettingActivityScreen(
     onBackClick: () -> Unit
 ) {
 
+    var isReboot by remember { mutableStateOf(false) }
+
     Column(
         modifier = Modifier
             .fillMaxSize()
@@ -98,13 +96,19 @@ fun SettingActivityScreen(
             checked = SettingsManager.getBoolean("fixed_menu",false)
 
             SwitchListItem(
+                isReboot = isReboot,
                 leadingIcon = painterResource(R.drawable.outline_horizontal_split_24),
                 title = stringResource(R.string.setting_fixed_menu),
-                subtitle = stringResource(R.string.setting_fixed_menu1),
+                subtitle = if (isReboot){
+                    stringResource(R.string.is_reboot)
+                }else{
+                    stringResource(R.string.setting_fixed_menu1)
+                },
                 checked =checked,
                 onCheckedChange = {newState ->
                     checked = newState
                     SettingsManager.putBoolean("fixed_menu",newState)
+                    isReboot = true
                 }
             )
         }

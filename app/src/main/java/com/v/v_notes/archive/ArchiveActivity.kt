@@ -1,76 +1,52 @@
-package com.v.v_notes
+package com.v.v_notes.archive
 
-import android.app.Application
 import android.content.Intent
 import android.os.Bundle
-import android.util.Log
-import android.widget.Toast
 import androidx.activity.ComponentActivity
 import androidx.activity.compose.setContent
-import androidx.activity.enableEdgeToEdge
-import androidx.activity.result.ActivityResultLauncher
-import androidx.activity.result.contract.ActivityResultContracts
-import androidx.compose.animation.*
+import androidx.compose.animation.Crossfade
 import androidx.compose.animation.core.tween
 import androidx.compose.foundation.background
-import androidx.compose.foundation.clickable
-import androidx.compose.foundation.layout.Arrangement
-import androidx.compose.foundation.layout.Box
-import androidx.compose.foundation.layout.Column
-import androidx.compose.foundation.layout.Row
-import androidx.compose.foundation.layout.fillMaxSize
-import androidx.compose.foundation.layout.fillMaxWidth
-import androidx.compose.foundation.layout.height
-import androidx.compose.foundation.layout.padding
-import androidx.compose.foundation.layout.size
-import androidx.compose.foundation.layout.statusBarsPadding
-import androidx.compose.foundation.layout.wrapContentSize
+import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
-import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Archive
 import androidx.compose.material.icons.filled.Close
 import androidx.compose.material.icons.filled.Delete
 import androidx.compose.material.icons.filled.Share
-import androidx.compose.material3.AlertDialog
-import androidx.compose.material3.Card
-import androidx.compose.material3.Icon
-import androidx.compose.material3.IconButton
-import androidx.compose.material3.MaterialTheme
-import androidx.compose.material3.Surface
-import androidx.compose.material3.Text
+import androidx.compose.material3.*
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.res.painterResource
-import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.font.FontWeight
-import androidx.compose.ui.tooling.preview.Preview
-import androidx.compose.ui.tooling.preview.PreviewScreenSizes
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.lifecycle.viewmodel.compose.viewModel
-import com.v.v_notes.addlist.RichTextEditorActivity
-import com.v.v_notes.archive.ArchiveActivity
+import android.app.Application
+import androidx.compose.material3.TextButton
+import androidx.compose.ui.graphics.Color
 import com.v.v_notes.components.*
-import com.v.v_notes.control.moveSelectedNotesToTrash
 import com.v.v_notes.data.database.NoteDatabase
-import com.v.v_notes.data.model.Note
-import com.v.v_notes.factory.NoteViewModelFactory
-import com.v.v_notes.setting.SettingActivity
-import com.v.v_notes.trash.TrashActivity
 import com.v.v_notes.ui.theme.MyNotesTheme
-import com.v.v_notes.viewmodel.NoteViewModel
-import com.v.v_notes.control.SettingsManager
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.launch
+import androidx.compose.runtime.getValue
+import com.v.v_notes.NoteDetailActivity
+import com.v.v_notes.data.model.Note
+import com.v.v_notes.viewmodel.NoteViewModel
+import com.v.v_notes.factory.NoteViewModelFactory
+import com.v.v_notes.MainActivity
+import com.v.v_notes.R
+import com.v.v_notes.control.SettingsManager
+import com.v.v_notes.setting.SettingActivity
+import com.v.v_notes.trash.TrashActivity
 
-class MainActivity : ComponentActivity() {
+class ArchiveActivity : ComponentActivity() {
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
-        enableEdgeToEdge()
         setContent {
             MyNotesTheme {
                 Surface(
@@ -78,23 +54,21 @@ class MainActivity : ComponentActivity() {
                         .fillMaxSize()
                         .background(MaterialTheme.colorScheme.background)
                 ) {
-                    MyNotesApp()
+                    ArchiveScreen(
+                        onBackClick = { finish() }
+                    )
                 }
             }
         }
     }
 }
 
-@PreviewScreenSizes
 @Composable
-fun MyNotesApp() {
+fun ArchiveScreen(
+    onBackClick: () -> Unit
+) {
     val context = LocalContext.current
     val coroutineScope = rememberCoroutineScope()
-
-    // 状态管理
-    var isMenuExpanded by remember { mutableStateOf(false) }
-    var selectedItem by remember { mutableIntStateOf(1) }
-    var isActive by remember { mutableStateOf(false) }
 
     // 选中的笔记ID列表
     val selectedNoteIds = remember { mutableStateListOf<String>() }
@@ -102,13 +76,21 @@ fun MyNotesApp() {
 
     // 控制删除确认对话框
     var showDeleteDialog by remember { mutableStateOf(false) }
+    var showUnarchiveDialog by remember { mutableStateOf(false) }
 
-    // 🔴 获取数据库实例
+    // 菜单展开状态
+    var isMenuExpanded by remember { mutableStateOf(false) }
+    var selectedItem by remember { mutableIntStateOf(3) } // 默认选中Archive(3)
+
+    // 获取是否使用底部菜单的设置
+    val useBottomMenu by remember { mutableStateOf(SettingsManager.getBoolean("fixed_menu")) }
+
+    // 获取数据库实例
     val database = remember { NoteDatabase.getInstance(context) }
 
-    // 🔴 修复：正确收集笔记流
-    val noteFlow = database.noteDao().getAllNotes()
-    val allNotes by noteFlow.collectAsState(initial = emptyList())
+    // 查询归档笔记
+    val archivedNotesFlow = database.noteDao().getAllArchivedNotes()
+    val archivedNotes by archivedNotesFlow.collectAsState(initial = emptyList())
 
     val noteViewModel: NoteViewModel = viewModel(
         factory = NoteViewModelFactory(
@@ -116,11 +98,24 @@ fun MyNotesApp() {
         )
     )
 
-    // 🔴 新增：获取是否使用底部菜单的设置
-    val useBottomMenu by remember { mutableStateOf(SettingsManager.getBoolean("fixed_menu")) }
+    // 删除已归档笔记
+    val deleteSelectedNotes = {
+        selectedNoteIds.forEach { noteId ->
+            coroutineScope.launch(Dispatchers.IO) {
+                database.noteDao().updateDeleteStatus(noteId, true)
+            }
+        }
+        selectedNoteIds.clear()
+    }
 
-    LaunchedEffect(Unit) {
-        Log.d("MainActivity", "应用启动，开始加载笔记")
+    // 取消归档（恢复到正常状态）
+    val unarchiveSelectedNotes = {
+        selectedNoteIds.forEach { noteId ->
+            coroutineScope.launch(Dispatchers.IO) {
+                database.noteDao().updateArchiveStatus(noteId, false)
+            }
+        }
+        selectedNoteIds.clear()
     }
 
     Box(
@@ -129,6 +124,7 @@ fun MyNotesApp() {
         Column(
             modifier = Modifier.fillMaxSize()
         ) {
+            // 顶部工具栏
             Crossfade(
                 targetState = isSelectionMode,
                 animationSpec = tween(300)
@@ -137,30 +133,19 @@ fun MyNotesApp() {
                     SelectionTopBar(
                         selectedCount = selectedNoteIds.size,
                         onDeleteClick = { showDeleteDialog = true },
-                        onArchiveClick = {
-                            selectedNoteIds.forEach { noteId ->
-                                coroutineScope.launch(Dispatchers.IO) {
-                                    database.noteDao().updateArchiveStatus(noteId, true)
-                                }
-                            }
-                            Toast.makeText(context,
-                                "已归档 ${selectedNoteIds.size} 条笔记",
-                                Toast.LENGTH_SHORT
-                            ).show()
-
-                            selectedNoteIds.clear()
-                        },
+                        onUnarchiveClick = { showUnarchiveDialog = true },
                         onShareClick = { /* TODO: 实现分享功能 */ },
                         onCancelSelection = { selectedNoteIds.clear() }
                     )
                 } else {
-                    NormalTopBar(
+                    ArchiveTopBar(
                         onMenuClick = { isMenuExpanded = true },
-                        onAccountClick = { /* 处理账户点击 */ }
+                        archiveCount = archivedNotes.size
                     )
                 }
             }
 
+            // 顶部菜单
             Menu(
                 modifier = Modifier
                     .wrapContentSize(Alignment.TopStart),
@@ -169,19 +154,26 @@ fun MyNotesApp() {
                 onItemSelected = { itemId ->
                     selectedItem = itemId
                     when (itemId) {
-                        1 -> { selectedItem = 1 }
-                        2 -> { selectedItem = 2 }
-                        3 -> {
-                            selectedItem = 3
-                            val intent = Intent(context, ArchiveActivity::class.java)
+                        1 -> { // Keep/主界面
+                            selectedItem = 1
+                            val intent = Intent(context, MainActivity::class.java)
                             context.startActivity(intent)
+                            onBackClick() // 关闭当前页面
                         }
-                        4 -> {
+                        2 -> { // Alert/提醒
+                            selectedItem = 2
+                            // TODO: 实现提醒页面
+                        }
+                        3 -> { // Archive/归档 - 当前页面，不跳转
+                            selectedItem = 3
+                        }
+                        4 -> { // Trash/回收站
                             selectedItem = 4
                             val intent = Intent(context, TrashActivity::class.java)
                             context.startActivity(intent)
+                            onBackClick() // 关闭当前页面
                         }
-                        5 -> {
+                        5 -> { // Setting/设置
                             selectedItem = 5
                             val intent = Intent(context, SettingActivity::class.java)
                             context.startActivity(intent)
@@ -192,14 +184,14 @@ fun MyNotesApp() {
                 showOnlyAlertAndSetting = useBottomMenu
             )
 
-            // 笔记列表区域，根据是否使用底部菜单调整权重
+            // 笔记列表区域
             Box(
                 modifier = Modifier
                     .fillMaxWidth()
                     .weight(1f)
             ) {
-                NotesListScreen(
-                    allNotes = allNotes,
+                ArchiveNotesListScreen(
+                    archivedNotes = archivedNotes,
                     selectedNoteIds = selectedNoteIds,
                     isSelectionMode = isSelectionMode,
                     onNoteClick = { noteId ->
@@ -225,65 +217,30 @@ fun MyNotesApp() {
                 )
             }
 
-            // 🔴 新增：如果使用底部菜单，则显示底部导航
+            // 如果使用底部菜单，则显示底部导航
             if (useBottomMenu) {
                 BottomNavMenu(
                     selectedItem = selectedItem,
                     onItemSelected = { itemId ->
                         selectedItem = itemId
                         when (itemId) {
-                            1 -> {
-                                // 已经在主界面，不需要跳转
-                                selectedItem = 1
-                            }
-                            3 -> {
-                                selectedItem = 3
-                                val intent = Intent(context, ArchiveActivity::class.java)
+                            1 -> { // Keep/主界面
+                                val intent = Intent(context, MainActivity::class.java)
                                 context.startActivity(intent)
+                                onBackClick() // 关闭当前页面
                             }
-                            4 -> {
-                                selectedItem = 4
+                            3 -> { // Archive/归档 - 当前页面，不跳转
+                                selectedItem = 3
+                            }
+                            4 -> { // Trash/回收站
                                 val intent = Intent(context, TrashActivity::class.java)
                                 context.startActivity(intent)
+                                onBackClick() // 关闭当前页面
                             }
                         }
                     }
                 )
             }
-        }
-
-        // 🔴 修改：浮动按钮区域，根据是否使用底部菜单调整位置
-        Box(
-            modifier = Modifier
-                .fillMaxSize()
-                .padding(
-                    bottom = if (useBottomMenu) 96.dp else 40.dp, // 当有底部菜单时，向上移动
-                    end = 40.dp
-                ),
-            contentAlignment = Alignment.BottomEnd
-        ) {
-            Column(
-                modifier = Modifier
-                    .align(Alignment.BottomEnd)
-                    .padding(bottom = 65.dp) // 恢复为原来的间距
-            ) {
-                AddButtonList(
-                    expanded = isActive,
-                    onPhotoClick = { isActive = false },
-                    onDrawClick = { isActive = false },
-                    onCheckClick = { isActive = false },
-                    onTextClick = {
-                        isActive = false
-                        val intent = Intent(context, RichTextEditorActivity::class.java)
-                        context.startActivity(intent)
-                    }
-                )
-            }
-
-            AddButton(
-                isActive = isActive,
-                onToggle = { isActive = it }
-            )
         }
     }
 
@@ -291,32 +248,51 @@ fun MyNotesApp() {
     if (showDeleteDialog) {
         AlertDialog(
             onDismissRequest = { showDeleteDialog = false },
-            title = { Text("删除笔记") },
+            title = { Text("删除归档笔记") },
             text = {
-                Text("确定要删除选中的 ${selectedNoteIds.size} 条笔记吗？此操作不可恢复。")
+                Text("确定要永久删除选中的 ${selectedNoteIds.size} 条归档笔记吗？此操作不可恢复。")
             },
             confirmButton = {
-                androidx.compose.material3.TextButton(
+                TextButton(
                     onClick = {
                         showDeleteDialog = false
-                        // 🔴 修复：使用新的删除方法
-                        moveSelectedNotesToTrash(
-                            context = context,
-                            noteIds = selectedNoteIds.toList(),
-                            coroutineScope = coroutineScope,
-                            noteViewModel = noteViewModel,
-                            allNotes = allNotes
-                        )
-                        // 清空选择列表
-                        selectedNoteIds.clear()
+                        deleteSelectedNotes()
                     }
                 ) {
-                    Text("删除")
+                    Text("删除", color = Color.Red)
                 }
             },
             dismissButton = {
-                androidx.compose.material3.TextButton(
+                TextButton(
                     onClick = { showDeleteDialog = false }
+                ) {
+                    Text("取消")
+                }
+            }
+        )
+    }
+
+    // 取消归档确认对话框
+    if (showUnarchiveDialog) {
+        AlertDialog(
+            onDismissRequest = { showUnarchiveDialog = false },
+            title = { Text("取消归档") },
+            text = {
+                Text("确定要将选中的 ${selectedNoteIds.size} 条笔记移出归档吗？")
+            },
+            confirmButton = {
+                TextButton(
+                    onClick = {
+                        showUnarchiveDialog = false
+                        unarchiveSelectedNotes()
+                    }
+                ) {
+                    Text("移出归档")
+                }
+            },
+            dismissButton = {
+                TextButton(
+                    onClick = { showUnarchiveDialog = false }
                 ) {
                     Text("取消")
                 }
@@ -326,20 +302,22 @@ fun MyNotesApp() {
 }
 
 /**
- * 普通模式顶部工具栏
+ * 归档页面顶部工具栏（普通模式）
  */
 @Composable
-fun NormalTopBar(
+fun ArchiveTopBar(
     onMenuClick: () -> Unit,
-    onAccountClick: () -> Unit
+    archiveCount: Int
 ) {
     Row(
         modifier = Modifier
             .fillMaxWidth()
             .padding(5.dp)
-            .statusBarsPadding(),
+            .statusBarsPadding()
+            .height(56.dp),
         verticalAlignment = Alignment.CenterVertically
     ) {
+        // 菜单按钮（替换原来的返回按钮）
         IconButton(onClick = onMenuClick) {
             Icon(
                 painter = painterResource(R.drawable.baseline_menu_24),
@@ -347,68 +325,34 @@ fun NormalTopBar(
             )
         }
 
-        // 搜索栏
-        Card(
+        // 标题和归档数量
+        Column(
             modifier = Modifier
                 .weight(1f)
-                .height(48.dp),
-            shape = RoundedCornerShape(40.dp)
+                .padding(start = 8.dp)
         ) {
-            Box(
-                modifier = Modifier
-                    .fillMaxSize()
-                    .clickable(onClick = {})
-            ) {
-                Row(
-                    modifier = Modifier
-                        .padding(horizontal = 16.dp)
-                        .fillMaxSize(),
-                    horizontalArrangement = Arrangement.End,
-                    verticalAlignment = Alignment.CenterVertically
-                ) {
-                    Text(
-                        modifier = Modifier.weight(0.5f),
-                        text = stringResource(R.string.search_box),
-                        color = MaterialTheme.colorScheme.primary
-                    )
-
-                    IconButton(onClick = {}) {
-                        Icon(
-                            tint = MaterialTheme.colorScheme.primary,
-                            painter = painterResource(R.drawable.baseline_splitscreen_24),
-                            contentDescription = "排列"
-                        )
-                    }
-
-                    IconButton(onClick = {}) {
-                        Icon(
-                            tint = MaterialTheme.colorScheme.primary,
-                            painter = painterResource(R.drawable.baseline_import_export_24),
-                            contentDescription = "排序"
-                        )
-                    }
-                }
-            }
-        }
-
-        // 账户按钮
-        IconButton(onClick = onAccountClick) {
-            Icon(
-                painter = painterResource(R.drawable.ic_account_box),
-                contentDescription = "账户"
+            Text(
+                text = "归档",
+                style = MaterialTheme.typography.titleLarge,
+                fontWeight = FontWeight.Bold
+            )
+            Text(
+                text = "$archiveCount 条笔记",
+                style = MaterialTheme.typography.bodySmall,
+                color = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.6f)
             )
         }
     }
 }
 
 /**
- * 选择模式顶部工具栏
+ * 归档页面选择模式顶部工具栏
  */
 @Composable
 fun SelectionTopBar(
     selectedCount: Int,
     onDeleteClick: () -> Unit,
-    onArchiveClick: () -> Unit,
+    onUnarchiveClick: () -> Unit,
     onShareClick: () -> Unit,
     onCancelSelection: () -> Unit
 ) {
@@ -468,14 +412,14 @@ fun SelectionTopBar(
             )
         }
 
-        // 归档按钮
+        // 取消归档按钮
         IconButton(
-            onClick = onArchiveClick,
+            onClick = onUnarchiveClick,
             modifier = Modifier.size(48.dp)
         ) {
             Icon(
                 imageVector = Icons.Default.Archive,
-                contentDescription = "归档",
+                contentDescription = "取消归档",
                 tint = MaterialTheme.colorScheme.onPrimary
             )
         }
@@ -483,14 +427,14 @@ fun SelectionTopBar(
 }
 
 @Composable
-fun NotesListScreen(
-    allNotes: List<Note>,
+fun ArchiveNotesListScreen(
+    archivedNotes: List<Note>,
     selectedNoteIds: List<String>,
     isSelectionMode: Boolean,
     onNoteClick: (String) -> Unit,
     onNoteLongPress: (String) -> Unit
 ) {
-    if (allNotes.isEmpty()) {
+    if (archivedNotes.isEmpty()) {
         Box(
             modifier = Modifier.fillMaxSize(),
             contentAlignment = Alignment.Center
@@ -499,13 +443,20 @@ fun NotesListScreen(
                 horizontalAlignment = Alignment.CenterHorizontally,
                 verticalArrangement = Arrangement.Center
             ) {
-                Text(
-                    text = "暂无笔记",
-                    style = MaterialTheme.typography.titleLarge,
-                    color = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.5f)
+                Icon(
+                    imageVector = Icons.Default.Archive,
+                    contentDescription = "空归档",
+                    modifier = Modifier.size(64.dp),
+                    tint = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.3f)
                 )
                 Text(
-                    text = "点击右下角按钮创建第一条笔记",
+                    text = "归档为空",
+                    style = MaterialTheme.typography.titleLarge,
+                    color = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.5f),
+                    modifier = Modifier.padding(top = 16.dp)
+                )
+                Text(
+                    text = "归档的笔记将在这里显示",
                     style = MaterialTheme.typography.bodyMedium,
                     color = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.3f),
                     modifier = Modifier.padding(top = 8.dp)
@@ -517,7 +468,7 @@ fun NotesListScreen(
             modifier = Modifier.fillMaxSize(),
             verticalArrangement = Arrangement.spacedBy(8.dp)
         ) {
-            items(allNotes) { note ->
+            items(archivedNotes) { note ->
                 NoteListItem(
                     note = note,
                     isSelected = selectedNoteIds.contains(note.id),
@@ -527,13 +478,5 @@ fun NotesListScreen(
                 )
             }
         }
-    }
-}
-
-@Preview(showBackground = true)
-@Composable
-fun GreetingPreview() {
-    MyNotesTheme {
-        MyNotesApp()
     }
 }
