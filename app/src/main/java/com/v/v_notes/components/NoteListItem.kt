@@ -19,7 +19,11 @@ import androidx.compose.material3.Icon
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.remember
+import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.alpha
@@ -32,6 +36,8 @@ import com.v.v_notes.data.model.Note
 import java.text.SimpleDateFormat
 import java.util.Date
 import java.util.Locale
+import androidx.compose.ui.platform.LocalLocale
+import androidx.compose.ui.tooling.preview.Preview
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
@@ -40,7 +46,8 @@ fun NoteListItem(
     isSelected: Boolean,
     isSelectionMode: Boolean,
     onClick: () -> Unit,
-    onLongPress: () -> Unit
+    onLongPress: () -> Unit,
+    modifier: Modifier = Modifier
 ) {
     Card(
         modifier = Modifier
@@ -49,7 +56,9 @@ fun NoteListItem(
             .combinedClickable(
                 onClick = onClick,
                 onLongClick = onLongPress
-            ),
+            )
+            //.alpha(alpha)  // 🔴 应用alpha动画
+            .then(modifier),
         shape = MaterialTheme.shapes.medium,
         colors = CardDefaults.cardColors(
             containerColor = if (isSelected) {
@@ -99,6 +108,92 @@ fun NoteListItem(
                     )
                 }
 
+                // 🔴 显示待办事项列表（不显示复选框，用删除线和颜色区分）
+                if (note.todoItems.isNotEmpty()) {
+                    val showTodoItems = note.todoItems.take(3) // 最多显示3个待办项
+                    val remainingCount = note.todoItems.size - 3
+
+                    Column(
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .padding(top = 8.dp)
+                    ) {
+                        showTodoItems.forEachIndexed { index, todoItem ->
+                            val textColor = if (isSelected) {
+                                if (todoItem.isCompleted) {
+                                    MaterialTheme.colorScheme.onPrimaryContainer.copy(alpha = 0.4f)
+                                } else {
+                                    MaterialTheme.colorScheme.onPrimaryContainer.copy(alpha = 0.8f)
+                                }
+                            } else {
+                                if (todoItem.isCompleted) {
+                                    MaterialTheme.colorScheme.onSurface.copy(alpha = 0.4f)
+                                } else {
+                                    MaterialTheme.colorScheme.onSurface
+                                }
+                            }
+
+                            val textDecoration = if (todoItem.isCompleted) {
+                                androidx.compose.ui.text.style.TextDecoration.LineThrough
+                            } else {
+                                androidx.compose.ui.text.style.TextDecoration.None
+                            }
+
+                            Row(
+                                verticalAlignment = Alignment.CenterVertically,
+                                modifier = Modifier.padding(vertical = 2.dp)
+                            ) {
+                                // 使用圆点符号代替复选框
+                                Text(
+                                    text = "•",
+                                    style = MaterialTheme.typography.bodySmall,
+                                    color = textColor,
+                                    modifier = Modifier.padding(end = 8.dp)
+                                )
+
+                                Text(
+                                    text = todoItem.text,
+                                    style = MaterialTheme.typography.bodySmall.copy(
+                                        textDecoration = textDecoration
+                                    ),
+                                    color = textColor,
+                                    maxLines = 1,
+                                    overflow = TextOverflow.Ellipsis,
+                                    modifier = Modifier.weight(1f)
+                                )
+                            }
+
+                            // 如果有更多的待办项，显示提示
+                            if (index == 2 && remainingCount > 0) {
+                                Text(
+                                    text = "... 还有${remainingCount}个待办项",
+                                    style = MaterialTheme.typography.labelSmall,
+                                    color = if (isSelected) {
+                                        MaterialTheme.colorScheme.onPrimaryContainer.copy(alpha = 0.6f)
+                                    } else {
+                                        MaterialTheme.colorScheme.onSurface.copy(alpha = 0.5f)
+                                    },
+                                    modifier = Modifier.padding(start = 4.dp)
+                                )
+                            }
+                        }
+                    }
+                } else if (plainContent.isEmpty() && note.todoItems.isEmpty()) {
+                    // 如果笔记内容和待办事项都为空，显示占位文本
+                    Text(
+                        text = "空笔记",
+                        style = MaterialTheme.typography.bodyMedium,
+                        color = if (isSelected) {
+                            MaterialTheme.colorScheme.onPrimaryContainer.copy(alpha = 0.5f)
+                        } else {
+                            MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.5f)
+                        },
+                        maxLines = 1,
+                        overflow = TextOverflow.Ellipsis,
+                        modifier = Modifier.padding(top = 4.dp)
+                    )
+                }
+
                 Row(
                     modifier = Modifier
                         .fillMaxWidth()
@@ -106,7 +201,7 @@ fun NoteListItem(
                     horizontalArrangement = Arrangement.SpaceBetween,
                     verticalAlignment = Alignment.CenterVertically
                 ) {
-                    val dateFormat = SimpleDateFormat("yyyy/MM/dd HH:mm", Locale.getDefault())
+                    val dateFormat = SimpleDateFormat("yyyy/MM/dd HH:mm", LocalLocale.current.platformLocale)
                     val dateStr = dateFormat.format(Date(note.createdAt))
 
                     Text(
@@ -159,23 +254,23 @@ fun NoteListItem(
                 }
             }
 
-            // 🔴 修复：复选框移到右侧，并使用固定宽度避免布局抖动
+            // 🔴 复选框移到右侧，并使用固定宽度避免布局抖动
             Box(
                 modifier = Modifier
                     .width(48.dp)  // 固定宽度，防止布局抖动
                     .padding(start = 8.dp)
             ) {
                 // 🔴 修复：使用Alpha动画而不是显示/隐藏，避免布局抖动
-                val alpha by animateFloatAsState(
+                val checkboxAlpha by animateFloatAsState(
                     targetValue = if (isSelectionMode) 1f else 0f,
-                    animationSpec = tween(300)
+                    animationSpec = tween(200)
                 )
 
                 Checkbox(
                     checked = isSelected,
                     onCheckedChange = null,
                     enabled = isSelectionMode,
-                    modifier = Modifier.alpha(alpha)
+                    modifier = Modifier.alpha(checkboxAlpha)
                 )
             }
         }

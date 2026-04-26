@@ -1,7 +1,6 @@
 package com.v.v_notes.components
 
 import androidx.compose.foundation.background
-import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.fillMaxWidth
@@ -131,313 +130,297 @@ fun FormattingToolbar(
             modifier = Modifier
                 .fillMaxWidth()
                 .padding(horizontal = 8.dp, vertical = 8.dp),
-            horizontalArrangement = Arrangement.SpaceBetween,
+            horizontalArrangement = androidx.compose.foundation.layout.Arrangement.spacedBy(4.dp),
             verticalAlignment = Alignment.CenterVertically
         ) {
-            // 左侧：格式按钮区域（可滚动）
-            Row(
-                modifier = Modifier.weight(1f),
-                horizontalArrangement = Arrangement.spacedBy(4.dp),
-                verticalAlignment = Alignment.CenterVertically
+            // 粗体按钮
+            IconButton(
+                onClick = {
+                    val currentSpanStyle = editorState.currentSpanStyle
+                    val currentFontWeight = currentSpanStyle?.fontWeight
+                    val isCurrentlyBold =
+                        (currentFontWeight?.weight ?: 400) >= FontWeight.Bold.weight
+
+                    if (isCurrentlyBold) {
+                        // 如果当前是粗体，切换到正常字重
+                        editorState.toggleSpanStyle(
+                            SpanStyle(fontWeight = FontWeight.Normal)
+                        )
+                        boldState = false
+                    } else {
+                        // 如果当前不是粗体，切换到粗体
+                        editorState.toggleSpanStyle(
+                            SpanStyle(fontWeight = FontWeight.Bold)
+                        )
+                        boldState = true
+                    }
+                },
+                modifier = Modifier.size(40.dp)
             ) {
-                // 粗体按钮 - 修复：实现真正的切换逻辑
-                IconButton(
-                    onClick = {
-                        val currentSpanStyle = editorState.currentSpanStyle
-                        val currentFontWeight = currentSpanStyle?.fontWeight
-                        val isCurrentlyBold =
-                            (currentFontWeight?.weight ?: 400) >= FontWeight.Bold.weight
-
-                        if (isCurrentlyBold) {
-                            // 如果当前是粗体，切换到正常字重
-                            editorState.toggleSpanStyle(
-                                SpanStyle(fontWeight = FontWeight.Normal)
-                            )
-                            boldState = false
-                        } else {
-                            // 如果当前不是粗体，切换到粗体
-                            editorState.toggleSpanStyle(
-                                SpanStyle(fontWeight = FontWeight.Bold)
-                            )
-                            boldState = true
-                        }
-                    },
-                    modifier = Modifier.size(40.dp)
-                ) {
-                    Icon(
-                        tint = MaterialTheme.colorScheme.onSurface,
-                        painter = painterResource(R.drawable.baseline_format_bold_24),
-                        contentDescription = "粗体",
-                        modifier = Modifier
-                            .size(20.dp)
-                            .then(Stylemodifier(boldState))
-                    )
-                }
-
-                // 斜体按钮 - 修复：实现真正的切换逻辑
-                IconButton(
-                    onClick = {
-                        val currentSpanStyle = editorState.currentSpanStyle
-                        val isCurrentlyItalic = currentSpanStyle?.fontStyle == FontStyle.Italic
-
-                        if (isCurrentlyItalic) {
-                            // 如果当前是斜体，切换到正常
-                            editorState.toggleSpanStyle(
-                                SpanStyle(fontStyle = FontStyle.Normal)
-                            )
-                            italicState = false
-                        } else {
-                            // 如果当前不是斜体，切换到斜体
-                            editorState.toggleSpanStyle(
-                                SpanStyle(fontStyle = FontStyle.Italic)
-                            )
-                            italicState = true
-                        }
-                    },
-                    modifier = Modifier.size(40.dp)
-                ) {
-                    Icon(
-                        tint = MaterialTheme.colorScheme.onSurface,
-                        imageVector = Icons.Default.FormatItalic,
-                        contentDescription = "斜体",
-                        modifier = Modifier
-                            .size(20.dp)
-                            .then(Stylemodifier(italicState))
-                    )
-                }
-
-                // 下划线按钮 - 更简单的修复方案
-                IconButton(
-                    onClick = {
-                        val currentSpanStyle = editorState.currentSpanStyle
-                        val hasUnderline = currentSpanStyle?.textDecoration?.contains(TextDecoration.Underline) ?: false
-
-                        if (hasUnderline) {
-                            // 移除下划线
-                            editorState.removeSpanStyle(
-                                SpanStyle(textDecoration = TextDecoration.Underline)
-                            )
-                            underlineState = false
-                        } else {
-                            // 添加下划线
-                            editorState.addSpanStyle(
-                                SpanStyle(textDecoration = TextDecoration.Underline)
-                            )
-                            underlineState = true
-                        }
-
-                        // 额外的保护：检查并移除可能的删除线
-                        val updatedStyle = editorState.currentSpanStyle
-                        val hasLineThrough = updatedStyle?.textDecoration?.contains(TextDecoration.LineThrough) ?: false
-
-                        if (hasLineThrough) {
-                            // 如果意外出现了删除线，立即移除
-                            editorState.removeSpanStyle(
-                                SpanStyle(textDecoration = TextDecoration.LineThrough)
-                            )
-                        }
-                    },
-                    modifier = Modifier.size(40.dp)
-                ) {
-                    Icon(
-                        tint = MaterialTheme.colorScheme.onSurface,
-                        imageVector = Icons.Default.FormatUnderlined,
-                        contentDescription = "下划线",
-                        modifier = Modifier
-                            .size(20.dp)
-                            .then(Stylemodifier(underlineState))
-                    )
-                }
-
-
-
-                // 项目符号列表按钮
-                IconButton(
-                    onClick = {
-                        editorState.toggleUnorderedList()
-                    },
-                    modifier = Modifier.size(40.dp)
-                ) {
-                    Icon(
-                        tint = MaterialTheme.colorScheme.onSurface,
-                        imageVector = Icons.Default.FormatListBulleted,
-                        contentDescription = "项目符号列表",
-                        modifier = Modifier
-                            .size(20.dp)
-                            .then(Stylemodifier(unorderedListState))
-                    )
-                }
-
-                // 编号列表按钮
-                IconButton(
-                    onClick = {
-                        editorState.toggleOrderedList()
-                    },
-                    modifier = Modifier.size(40.dp)
-                ) {
-                    Icon(
-                        tint = MaterialTheme.colorScheme.onSurface,
-                        imageVector = Icons.Default.FormatListNumbered,
-                        contentDescription = "编号列表",
-                        modifier = Modifier
-                            .size(20.dp)
-                            .then(Stylemodifier(orderedListState))
-                    )
-                }
-
-                // 标题样式按钮组
-                // 1级标题按钮 - 修复：使用Normal字重，允许单独加粗
-                IconButton(
-                    onClick = {
-                        editorState.addParagraphStyle(
-                            ParagraphStyle(lineHeight = 32.sp)
-                        )
-                        // 使用Normal字重，而不是Bold
-                        editorState.toggleSpanStyle(
-                            SpanStyle(
-                                fontSize = 24.sp,
-                                fontWeight = FontWeight.Normal
-                            )
-                        )
-                        // 设置标题状态
-                        heading1State = true
-                        heading2State = false
-                        normalTextState = false
-                    },
-                    modifier = Modifier.size(40.dp)
-                ) {
-                    Icon(
-                        painter = painterResource(R.drawable.outline_looks_one_24),
-                        contentDescription = "1级标题",
-                        modifier = Modifier
-                            .size(20.dp)
-                            .then(Stylemodifier(heading1State)),
-                        tint = MaterialTheme.colorScheme.onSurface
-                    )
-                }
-
-                // 2级标题按钮 - 修复：使用Normal字重，允许单独加粗
-                IconButton(
-                    onClick = {
-                        editorState.addParagraphStyle(
-                            ParagraphStyle(lineHeight = 28.sp)
-                        )
-                        // 使用Normal字重，而不是Bold
-                        editorState.toggleSpanStyle(
-                            SpanStyle(
-                                fontSize = 20.sp,
-                                fontWeight = FontWeight.Normal
-                            )
-                        )
-                        // 设置标题状态
-                        heading1State = false
-                        heading2State = true
-                        normalTextState = false
-                    },
-                    modifier = Modifier.size(40.dp)
-                ) {
-                    Icon(
-                        painter = painterResource(R.drawable.outline_looks_two_24),
-                        contentDescription = "2级标题",
-                        modifier = Modifier
-                            .size(20.dp)
-                            .then(Stylemodifier(heading2State)),
-                        tint = MaterialTheme.colorScheme.onSurface
-                    )
-                }
-
-                // 正文标题按钮 - 修复：使用Normal字重
-                IconButton(
-                    onClick = {
-                        editorState.addParagraphStyle(ParagraphStyle())
-                        // 使用Normal字重，而不是Medium
-                        editorState.toggleSpanStyle(
-                            SpanStyle(
-                                fontSize = 16.sp,
-                                fontWeight = FontWeight.Normal
-                            )
-                        )
-                        // 设置标题状态
-                        heading1State = false
-                        heading2State = false
-                        normalTextState = true
-                    },
-                    modifier = Modifier.size(40.dp)
-                ) {
-                    Icon(
-                        painter = painterResource(R.drawable.outline_text_format_24),
-                        contentDescription = "正文标题",
-                        modifier = Modifier
-                            .size(20.dp)
-                            .then(Stylemodifier(normalTextState)),
-                        tint = MaterialTheme.colorScheme.onSurface
-                    )
-                }
-
-                // 清除格式按钮
-                IconButton(
-                    onClick = {
-                        // 清除格式的完整实现
-                        try {
-                            // 使用我们改进的清除格式方法
-                            resetToPlainText(editorState)
-
-                            // 重置所有状态变量
-                            boldState = false
-                            italicState = false
-                            underlineState = false
-                            unorderedListState = false
-                            orderedListState = false
-                            heading1State = false
-                            heading2State = false
-                            normalTextState = false
-
-                        } catch (e: Exception) {
-                            // 备用方案
-                            println("清除格式时出错: ${e.message}")
-                        }
-                    },
-                    modifier = Modifier.size(40.dp)
-                ) {
-                    Icon(
-                        tint = MaterialTheme.colorScheme.onSurface,
-                        imageVector = Icons.Default.FormatClear,
-                        contentDescription = "清除格式",
-                        modifier = Modifier.size(20.dp)
-                    )
-                }
+                Icon(
+                    tint = MaterialTheme.colorScheme.onSurface,
+                    painter = painterResource(R.drawable.baseline_format_bold_24),
+                    contentDescription = "粗体",
+                    modifier = Modifier
+                        .size(20.dp)
+                        .then(Stylemodifier(boldState))
+                )
             }
 
-            // 右侧：功能按钮区域
-            Row(
-                horizontalArrangement = Arrangement.spacedBy(4.dp),
-                verticalAlignment = Alignment.CenterVertically
-            ) {
-                // 图片插入按钮
-                IconButton(
-                    onClick = onImageClick,
-                    modifier = Modifier.size(40.dp)
-                ) {
-                    Icon(
-                        tint = MaterialTheme.colorScheme.onSurface,
-                        imageVector = Icons.Default.Image,
-                        contentDescription = "插入图片",
-                        modifier = Modifier.size(20.dp)
-                    )
-                }
+            // 斜体按钮
+            IconButton(
+                onClick = {
+                    val currentSpanStyle = editorState.currentSpanStyle
+                    val isCurrentlyItalic = currentSpanStyle?.fontStyle == FontStyle.Italic
 
-                // 待办事项按钮
-                IconButton(
-                    onClick = onAddTodo,
-                    modifier = Modifier.size(40.dp)
-                ) {
-                    Icon(
-                        tint = MaterialTheme.colorScheme.onSurface,
-                        painter = painterResource(R.drawable.outline_check_box_24),
-                        contentDescription = "添加待办",
-                        modifier = Modifier.size(20.dp)
+                    if (isCurrentlyItalic) {
+                        // 如果当前是斜体，切换到正常
+                        editorState.toggleSpanStyle(
+                            SpanStyle(fontStyle = FontStyle.Normal)
+                        )
+                        italicState = false
+                    } else {
+                        // 如果当前不是斜体，切换到斜体
+                        editorState.toggleSpanStyle(
+                            SpanStyle(fontStyle = FontStyle.Italic)
+                        )
+                        italicState = true
+                    }
+                },
+                modifier = Modifier.size(40.dp)
+            ) {
+                Icon(
+                    tint = MaterialTheme.colorScheme.onSurface,
+                    imageVector = Icons.Default.FormatItalic,
+                    contentDescription = "斜体",
+                    modifier = Modifier
+                        .size(20.dp)
+                        .then(Stylemodifier(italicState))
+                )
+            }
+
+            // 下划线按钮
+            IconButton(
+                onClick = {
+                    val currentSpanStyle = editorState.currentSpanStyle
+                    val hasUnderline = currentSpanStyle?.textDecoration?.contains(TextDecoration.Underline) ?: false
+
+                    if (hasUnderline) {
+                        // 移除下划线
+                        editorState.removeSpanStyle(
+                            SpanStyle(textDecoration = TextDecoration.Underline)
+                        )
+                        underlineState = false
+                    } else {
+                        // 添加下划线
+                        editorState.addSpanStyle(
+                            SpanStyle(textDecoration = TextDecoration.Underline)
+                        )
+                        underlineState = true
+                    }
+
+                    // 额外的保护：检查并移除可能的删除线
+                    val updatedStyle = editorState.currentSpanStyle
+                    val hasLineThrough = updatedStyle?.textDecoration?.contains(TextDecoration.LineThrough) ?: false
+
+                    if (hasLineThrough) {
+                        // 如果意外出现了删除线，立即移除
+                        editorState.removeSpanStyle(
+                            SpanStyle(textDecoration = TextDecoration.LineThrough)
+                        )
+                    }
+                },
+                modifier = Modifier.size(40.dp)
+            ) {
+                Icon(
+                    tint = MaterialTheme.colorScheme.onSurface,
+                    imageVector = Icons.Default.FormatUnderlined,
+                    contentDescription = "下划线",
+                    modifier = Modifier
+                        .size(20.dp)
+                        .then(Stylemodifier(underlineState))
+                )
+            }
+
+            // 项目符号列表按钮
+            IconButton(
+                onClick = {
+                    editorState.toggleUnorderedList()
+                },
+                modifier = Modifier.size(40.dp)
+            ) {
+                Icon(
+                    tint = MaterialTheme.colorScheme.onSurface,
+                    imageVector = Icons.Default.FormatListBulleted,
+                    contentDescription = "项目符号列表",
+                    modifier = Modifier
+                        .size(20.dp)
+                        .then(Stylemodifier(unorderedListState))
+                )
+            }
+
+            // 编号列表按钮
+            IconButton(
+                onClick = {
+                    editorState.toggleOrderedList()
+                },
+                modifier = Modifier.size(40.dp)
+            ) {
+                Icon(
+                    tint = MaterialTheme.colorScheme.onSurface,
+                    imageVector = Icons.Default.FormatListNumbered,
+                    contentDescription = "编号列表",
+                    modifier = Modifier
+                        .size(20.dp)
+                        .then(Stylemodifier(orderedListState))
+                )
+            }
+
+            // 1级标题按钮
+            IconButton(
+                onClick = {
+                    editorState.addParagraphStyle(
+                        ParagraphStyle(lineHeight = 32.sp)
                     )
-                }
+                    // 使用Normal字重，而不是Bold
+                    editorState.toggleSpanStyle(
+                        SpanStyle(
+                            fontSize = 24.sp,
+                            fontWeight = FontWeight.Normal
+                        )
+                    )
+                    // 设置标题状态
+                    heading1State = true
+                    heading2State = false
+                    normalTextState = false
+                },
+                modifier = Modifier.size(40.dp)
+            ) {
+                Icon(
+                    painter = painterResource(R.drawable.outline_looks_one_24),
+                    contentDescription = "1级标题",
+                    modifier = Modifier
+                        .size(20.dp)
+                        .then(Stylemodifier(heading1State)),
+                    tint = MaterialTheme.colorScheme.onSurface
+                )
+            }
+
+            // 2级标题按钮
+            IconButton(
+                onClick = {
+                    editorState.addParagraphStyle(
+                        ParagraphStyle(lineHeight = 28.sp)
+                    )
+                    // 使用Normal字重，而不是Bold
+                    editorState.toggleSpanStyle(
+                        SpanStyle(
+                            fontSize = 20.sp,
+                            fontWeight = FontWeight.Normal
+                        )
+                    )
+                    // 设置标题状态
+                    heading1State = false
+                    heading2State = true
+                    normalTextState = false
+                },
+                modifier = Modifier.size(40.dp)
+            ) {
+                Icon(
+                    painter = painterResource(R.drawable.outline_looks_two_24),
+                    contentDescription = "2级标题",
+                    modifier = Modifier
+                        .size(20.dp)
+                        .then(Stylemodifier(heading2State)),
+                    tint = MaterialTheme.colorScheme.onSurface
+                )
+            }
+
+            // 正文标题按钮
+            IconButton(
+                onClick = {
+                    editorState.addParagraphStyle(ParagraphStyle())
+                    // 使用Normal字重，而不是Medium
+                    editorState.toggleSpanStyle(
+                        SpanStyle(
+                            fontSize = 16.sp,
+                            fontWeight = FontWeight.Normal
+                        )
+                    )
+                    // 设置标题状态
+                    heading1State = false
+                    heading2State = false
+                    normalTextState = true
+                },
+                modifier = Modifier.size(40.dp)
+            ) {
+                Icon(
+                    painter = painterResource(R.drawable.outline_text_format_24),
+                    contentDescription = "正文标题",
+                    modifier = Modifier
+                        .size(20.dp)
+                        .then(Stylemodifier(normalTextState)),
+                    tint = MaterialTheme.colorScheme.onSurface
+                )
+            }
+
+            // 清除格式按钮
+            IconButton(
+                onClick = {
+                    // 清除格式的完整实现
+                    try {
+                        // 使用我们改进的清除格式方法
+                        resetToPlainText(editorState)
+
+                        // 重置所有状态变量
+                        boldState = false
+                        italicState = false
+                        underlineState = false
+                        unorderedListState = false
+                        orderedListState = false
+                        heading1State = false
+                        heading2State = false
+                        normalTextState = false
+
+                    } catch (e: Exception) {
+                        // 备用方案
+                        println("清除格式时出错: ${e.message}")
+                    }
+                },
+                modifier = Modifier.size(40.dp)
+            ) {
+                Icon(
+                    tint = MaterialTheme.colorScheme.onSurface,
+                    imageVector = Icons.Default.FormatClear,
+                    contentDescription = "清除格式",
+                    modifier = Modifier.size(20.dp)
+                )
+            }
+
+            // 图片插入按钮
+            IconButton(
+                onClick = onImageClick,
+                modifier = Modifier.size(40.dp)
+            ) {
+                Icon(
+                    tint = MaterialTheme.colorScheme.onSurface,
+                    imageVector = Icons.Default.Image,
+                    contentDescription = "插入图片",
+                    modifier = Modifier.size(20.dp)
+                )
+            }
+
+            // 待办事项按钮
+            IconButton(
+                onClick = onAddTodo,
+                modifier = Modifier.size(40.dp)
+            ) {
+                Icon(
+                    tint = MaterialTheme.colorScheme.onSurface,
+                    painter = painterResource(R.drawable.outline_check_box_24),
+                    contentDescription = "添加待办",
+                    modifier = Modifier.size(20.dp)
+                )
             }
         }
     }

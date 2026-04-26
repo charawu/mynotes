@@ -2,6 +2,7 @@ package com.v.v_notes.data.repository
 
 import com.v.v_notes.data.dao.NoteDao
 import com.v.v_notes.data.model.Note
+import com.v.v_notes.data.model.TodoItem
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.withContext
@@ -109,6 +110,33 @@ class NoteRepositoryImpl(
     override suspend fun emptyTrash() {
         withContext(Dispatchers.IO) {
             noteDao.permanentlyDeleteAllTrashed()
+        }
+    }
+
+    // ============ 新增的待办事项操作方法实现 ============
+
+    override suspend fun updateTodoItemStatus(noteId: String, todoItemId: String, isCompleted: Boolean) {
+        withContext(Dispatchers.IO) {
+            // 调用DAO中的事务方法
+            noteDao.updateTodoItemStatus(noteId, todoItemId, isCompleted)
+        }
+    }
+
+    override suspend fun updateTodoItemsList(noteId: String, todoItems: List<TodoItem>) {
+        withContext(Dispatchers.IO) {
+            noteDao.updateTodoItemsList(noteId, todoItems)
+        }
+    }
+
+    override suspend fun addTodoItem(noteId: String, text: String) {
+        withContext(Dispatchers.IO) {
+            noteDao.addTodoItem(noteId, text)
+        }
+    }
+
+    override suspend fun removeTodoItem(noteId: String, todoItemId: String) {
+        withContext(Dispatchers.IO) {
+            noteDao.removeTodoItem(noteId, todoItemId)
         }
     }
 }

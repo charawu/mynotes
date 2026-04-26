@@ -1,0 +1,32 @@
+<?xml version="1.0" encoding="utf-8"?>
+<paths>
+    <!-- 对应内部存储的 files 目录 -->
+    <files-path
+        name="files"
+        path="." />
+
+    <!-- 对应内部存储的 notes_images 目录 -->
+    <files-path
+        name="notes_images"
+        path="notes_images/" />
+
+    <!-- 内部缓存目录 -->
+    <cache-path
+        name="cache"
+        path="." />
+
+    <!-- 外部存储的应用私有目录 -->
+    <external-files-path
+        name="external_files"
+        path="." />
+
+    <!-- 外部存储的公共目录 -->
+    <external-path
+        name="external"
+        path="." />
+
+    <!-- 外部缓存目录 -->
+    <external-cache-path
+        name="external_cache"
+        path="." />
+</paths>

@@ -10,7 +10,7 @@
     
     <string name="keep">记事</string>
     <string name="alert">提醒</string>
-    <string name="archive">已归档</string>
+    <string name="archived">已归档</string>
     <string name="trash">回收站</string>
     <string name="setting">设置</string>
     
@@ -23,5 +23,18 @@
     <string name="setting_fixed_menu1">将菜单固定到底部</string>
     <string name="is_reboot">重启软件生效!</string>
 
+    <string name="todo_progress">待办进度</string>
+    <string name="completed">完成</string>
+    <string name="no_todo_items">无待办事项</string>
+    <string name="mark_as_complete">标记为已完成</string>
+    <string name="mark_as_incomplete">标记为未完成</string>
+    <string name="updating">更新中...</string>
+
     <string name="edit_title">标题</string>
+    <string name="delete_title">删除笔记</string>
+    <string name="delete_1">确定要移动选中的</string>
+    <string name="delete_2">条笔记到回收站吗?</string>
+    <string name="delete">删除</string>
+    <string name="cancel">取消</string>
+    <string name="archive">归档</string>
 </resources>

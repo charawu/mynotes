@@ -5,7 +5,6 @@ import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
-import androidx.compose.foundation.layout.padding
 import androidx.compose.material3.Icon
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.NavigationBar
@@ -67,14 +66,14 @@ fun BottomNavMenu(
             icon = {
                 Icon(
                     painter = painterResource(R.drawable.outline_archive_24),
-                    contentDescription = stringResource(R.string.archive),
+                    contentDescription = stringResource(R.string.archived),
                     tint = if (selectedItem == 3) MaterialTheme.colorScheme.primary
                     else MaterialTheme.colorScheme.onSurfaceVariant
                 )
             },
             label = {
                 Text(
-                    text = stringResource(R.string.archive),
+                    text = stringResource(R.string.archived),
                     color = if (selectedItem == 3) MaterialTheme.colorScheme.primary
                     else MaterialTheme.colorScheme.onSurfaceVariant
                 )
@@ -156,14 +155,14 @@ fun EnhancedBottomNavMenu(
             icon = {
                 Icon(
                     painter = painterResource(R.drawable.outline_archive_24),
-                    contentDescription = stringResource(R.string.archive),
+                    contentDescription = stringResource(R.string.archived),
                     tint = if (selectedItem == 3) MaterialTheme.colorScheme.primary
                     else MaterialTheme.colorScheme.onSurfaceVariant
                 )
             },
             label = {
                 Text(
-                    text = stringResource(R.string.archive),
+                    text = stringResource(R.string.archived),
                     color = if (selectedItem == 3) MaterialTheme.colorScheme.primary
                     else MaterialTheme.colorScheme.onSurfaceVariant
                 )

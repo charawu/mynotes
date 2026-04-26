@@ -64,6 +64,11 @@ dependencies {
     implementation(libs.androidx.room.runtime)
     implementation(libs.androidx.compose.foundation.layout)
     implementation(libs.androidx.compose.animation)
+    implementation(libs.androidx.foundation)
+    implementation(libs.androidx.runtime)
+    implementation(libs.androidx.compose.ui.text)
+    implementation(libs.androidx.ui)
+    implementation(libs.androidx.compose.ui.test)
     ksp("androidx.room:room-compiler:2.8.4")
     implementation(libs.androidx.room.ktx)
 
@@ -81,8 +86,12 @@ dependencies {
     //图片编辑
     implementation("com.burhanrashid52:photoeditor:3.1.0")
 
+    implementation("com.github.bumptech.glide:glide:5.0.7")
+
     // 图片查看器
     //implementation("com.github.skydoves:imageviewer:2.2.1")
+    implementation("androidx.compose.foundation:foundation:1.6.0")
+    implementation("androidx.appcompat:appcompat:1.6.1")
 
     //导航组件
     implementation("androidx.navigation:navigation-compose:2.7.7")

@@ -12,10 +12,9 @@ import androidx.activity.enableEdgeToEdge
 import androidx.activity.result.PickVisualMediaRequest
 import androidx.activity.result.contract.ActivityResultContracts
 import androidx.annotation.RequiresApi
-import androidx.compose.foundation.layout.Arrangement
+import androidx.compose.foundation.ExperimentalFoundationApi
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
-import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
@@ -23,12 +22,12 @@ import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.imePadding
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
-import androidx.compose.foundation.rememberScrollState
-import androidx.compose.foundation.verticalScroll
+import androidx.compose.foundation.layout.width
 import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.filled.Add
 import androidx.compose.material.icons.filled.Close
-import androidx.compose.material3.Checkbox
 import androidx.compose.material3.ExperimentalMaterial3Api
+import androidx.compose.material3.FilledTonalButton
 import androidx.compose.material3.HorizontalDivider
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
@@ -47,17 +46,15 @@ import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.graphics.Color
-import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.font.FontWeight
-import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import androidx.compose.ui.window.Dialog
+import androidx.compose.ui.window.DialogProperties
 import androidx.lifecycle.viewmodel.compose.viewModel
-import coil.compose.AsyncImage
 import com.mohamedrejeb.richeditor.annotation.ExperimentalRichTextApi
 import com.mohamedrejeb.richeditor.model.RichTextState
 import com.mohamedrejeb.richeditor.model.rememberRichTextState
@@ -74,6 +71,19 @@ import com.v.v_notes.ui.theme.MyNotesTheme
 import com.v.v_notes.viewmodel.NoteViewModel
 import java.util.Date
 import java.util.UUID
+import kotlinx.coroutines.delay
+import com.v.v_notes.components.EnhancedImagePreviewGrid
+import com.v.v_notes.components.EnhancedTodoList
+import com.v.v_notes.control.PhotoViewerEditor
+import com.v.v_notes.control.ViewMode
+import androidx.compose.material3.Surface
+import androidx.compose.runtime.mutableIntStateOf
+import androidx.compose.ui.graphics.Color
+import androidx.compose.runtime.rememberCoroutineScope
+import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.launch
+import kotlinx.coroutines.withContext
+import java.io.File
 
 class RichTextEditorActivity : ComponentActivity() {
     @RequiresApi(Build.VERSION_CODES.VANILLA_ICE_CREAM)
@@ -82,11 +92,13 @@ class RichTextEditorActivity : ComponentActivity() {
         enableEdgeToEdge()
 
         val noteId = intent.getStringExtra("noteId")
+        val quickAction = intent.getStringExtra("quickAction")
 
         setContent {
             MyNotesTheme() {
                 RichTextEditorScreen(
                     noteId = noteId,
+                    quickAction = quickAction, // 传递快捷操作类型
                     onBackClick = { finish() },
                     onSaveClick = { note ->
                         finish()
@@ -96,56 +108,37 @@ class RichTextEditorActivity : ComponentActivity() {
         }
     }
 }
-
-/**
- * 历史记录管理类
- */
 class HistoryManager(maxHistorySize: Int = 50) {
     private val undoStack = mutableListOf<String>()
     private val redoStack = mutableListOf<String>()
     private val maxSize = maxHistorySize
 
-    /**
-     * 添加状态到历史记录
-     */
     fun pushState(state: String) {
-        // 如果当前栈顶状态与要添加的状态相同，则不添加
         if (undoStack.isEmpty() || undoStack.last() != state) {
             undoStack.add(state)
 
-            // 限制历史记录大小
+            //限制历史记录大小
             if (undoStack.size > maxSize) {
                 undoStack.removeAt(0)
             }
 
-            // 添加新状态时清空重做栈
             redoStack.clear()
         }
     }
 
-    /**
-     * 撤销操作
-     * @return 上一个状态，如果没有可撤销的操作则返回null
-     */
     @RequiresApi(Build.VERSION_CODES.VANILLA_ICE_CREAM)
     fun undo(currentState: String): String? {
         if (undoStack.size > 1) {
-            // 将当前状态保存到重做栈
             redoStack.add(currentState)
 
-            // 从撤销栈中移除当前状态
             undoStack.removeLast()
 
-            // 返回上一个状态
+            //返回上一个状态
             return undoStack.lastOrNull()
         }
         return null
     }
 
-    /**
-     * 重做操作
-     * @return 下一个状态，如果没有可重做的操作则返回null
-     */
     @RequiresApi(Build.VERSION_CODES.VANILLA_ICE_CREAM)
     fun redo(): String? {
         if (redoStack.isNotEmpty()) {
@@ -162,42 +155,32 @@ class HistoryManager(maxHistorySize: Int = 50) {
     //是否可以重做
     fun canRedo(): Boolean = redoStack.isNotEmpty()
 
-    //清空历史记录
-    fun clear() {
-        undoStack.clear()
-        redoStack.clear()
-    }
 }
 
-/**
- * 主编辑器界面
- */
 @RequiresApi(Build.VERSION_CODES.VANILLA_ICE_CREAM)
-@OptIn(ExperimentalMaterial3Api::class, ExperimentalRichTextApi::class)
+@OptIn(ExperimentalMaterial3Api::class, ExperimentalRichTextApi::class, ExperimentalFoundationApi::class)
 @Composable
 fun RichTextEditorScreen(
-    noteId: String? = null, // 新增：可选的笔记ID，null表示新建笔记
+    noteId: String? = null,
+    quickAction: String? = null,
     onBackClick: () -> Unit,
     onSaveClick: (EditorNoteItem) -> Unit
 ) {
     val context = LocalContext.current
+    val coroutineScope = rememberCoroutineScope()
 
     var title by remember { mutableStateOf("") }
     val editorState = rememberRichTextState()
-
     val insertedImages = remember { mutableStateListOf<Uri>() }
-
     val todoItems = remember { mutableStateListOf<EditorTodoItem>() }
-
-    // 创建历史记录管理器
     val historyManager = remember { HistoryManager() }
-
-    // 跟踪是否可以进行撤销/重做
     var canUndo by remember { mutableStateOf(false) }
     var canRedo by remember { mutableStateOf(false) }
-
-    // 创建图片文件管理器
+    var handledQuickAction by remember { mutableStateOf(false) }
     val imageFileManager = remember { ImageFileManager(context) }
+
+    // 添加一个状态来控制是否显示富文本编辑器
+    var showRichTextEditor by remember { mutableStateOf(true) }
 
     val noteViewModel: NoteViewModel = viewModel(
         factory = NoteViewModelFactory(
@@ -205,53 +188,49 @@ fun RichTextEditorScreen(
         )
     )
 
-    // 直接从数据库获取笔记
+    val imagePicker = rememberLauncherForActivityResult(
+        contract = ActivityResultContracts.PickVisualMedia()
+    ) { uri ->
+        uri?.let {
+            insertedImages.add(it)
+        }
+    }
+
     val database = NoteDatabase.getInstance(context)
     val noteFlow = database.noteDao().getAllNoteBy()
     val allNotes by noteFlow.collectAsState(initial = emptyList<Note>())
 
-    // 如果是编辑模式，查找对应笔记
     val existingNote: Note? = if (noteId != null) {
         allNotes.find { it.id == noteId }
     } else {
         null
     }
 
-    // 监听编辑器内容变化，保存到历史记录
     LaunchedEffect(editorState.toHtml()) {
         val currentHtml = editorState.toHtml()
         if (currentHtml.isNotBlank()) {
             historyManager.pushState(currentHtml)
         }
-
-        // 更新按钮状态
         canUndo = historyManager.canUndo()
         canRedo = historyManager.canRedo()
     }
 
-    // 如果是编辑模式，加载现有数据
+    // 编辑模式,加载现有数据
     LaunchedEffect(existingNote) {
         if (existingNote != null) {
-            // 设置标题
             title = existingNote.title
-
-            // 设置编辑器内容
             editorState.setHtml(existingNote.content)
 
-            // 加载图片URI - 从数据库中的私有目录URI转换为可访问的URI
             insertedImages.clear()
             existingNote.imageUris.forEach { uriString ->
                 try {
-                    // 通过ImageFileManager获取可访问的URI
                     val accessibleUri = imageFileManager.getAccessibleImageUri(uriString)
                     insertedImages.add(accessibleUri)
                 } catch (e: Exception) {
-                    // 如果URI格式不正确，记录错误但继续
                     println("无法解析图片URI: $uriString, 错误: ${e.message}")
                 }
             }
 
-            // 加载待办事项
             todoItems.clear()
             existingNote.todoItems.forEach { todo ->
                 todoItems.add(
@@ -263,19 +242,40 @@ fun RichTextEditorScreen(
                     )
                 )
             }
+
+            // 如果有待办事项，默认显示待办列表
+            if (existingNote.todoItems.isNotEmpty()) {
+                showRichTextEditor = false
+            }
         }
     }
 
-    val imagePicker = rememberLauncherForActivityResult(
-        contract = ActivityResultContracts.PickVisualMedia()
-    ) { uri ->
-        uri?.let {
-            // 只将图片URI添加到列表中，不在编辑器中插入任何HTML
-            insertedImages.add(it)
+    LaunchedEffect(quickAction, existingNote) {
+        if (noteId == null && quickAction != null && !handledQuickAction) {
+            delay(100)
+
+            when (quickAction) {
+                "image" -> {
+                    imagePicker.launch(
+                        PickVisualMediaRequest(ActivityResultContracts.PickVisualMedia.ImageOnly)
+                    )
+                    handledQuickAction = true
+                }
+                "todo" -> {
+                    todoItems.add(EditorTodoItem(text = ""))
+                    // 添加待办时切换到待办列表视图
+                    showRichTextEditor = false
+                    handledQuickAction = true
+                }
+                else -> {
+                    handledQuickAction = true
+                }
+            }
+        } else if (noteId != null) {
+            handledQuickAction = true
         }
     }
 
-    // 撤销函数
     val onUndo = {
         val currentState = editorState.toHtml()
         val previousState = historyManager.undo(currentState)
@@ -284,12 +284,10 @@ fun RichTextEditorScreen(
             editorState.setHtml(previousState)
         }
 
-        // 更新按钮状态
         canUndo = historyManager.canUndo()
         canRedo = historyManager.canRedo()
     }
 
-    // 重做函数
     val onRedo = {
         val nextState = historyManager.redo()
 
@@ -297,47 +295,33 @@ fun RichTextEditorScreen(
             editorState.setHtml(nextState)
         }
 
-        // 更新按钮状态
         canUndo = historyManager.canUndo()
         canRedo = historyManager.canRedo()
     }
 
-    /**
-     * 保存笔记的核心逻辑
-     * 1. 将图片保存到私有目录
-     * 2. 创建笔记对象并保存到数据库
-     * 注意：编辑器内容中不包含图片HTML，图片URL单独存储
-     */
     val onSaveNote = {
-        // 1. 保存图片到私有目录
         val savedImageUris = imageFileManager.saveImagesToPrivateStorage(insertedImages)
 
-        // 2. 获取编辑器内容（纯文本/HTML，不包含图片）
         val noteContent = editorState.toHtml()
 
-        // 3. 清理旧的图片文件（如果是编辑模式）
         if (noteId != null && existingNote != null) {
-            // 找出需要删除的旧图片（新列表中不包含的旧图片）
             val oldImages = existingNote.imageUris.toMutableList()
             val newImages = savedImageUris.toMutableList()
 
             val imagesToDelete = oldImages.filter { oldImageUri ->
                 !newImages.any { newImageUri ->
-                    // 简单的字符串比较，实际可能需要更复杂的逻辑
                     newImageUri.contains(oldImageUri.substringAfterLast("/"))
                 }
             }
 
-            // 删除不再使用的图片
             imageFileManager.deleteImagesFromPrivateStorage(imagesToDelete)
         }
 
-        // 4. 创建笔记对象
         val note = Note(
             id = noteId ?: UUID.randomUUID().toString(),
             title = title,
             content = noteContent,
-            imageUris = savedImageUris, // 保存私有目录的URI，单独存储
+            imageUris = savedImageUris,
             todoItems = todoItems.map { todoItem ->
                 DbTodoItem(
                     id = todoItem.id,
@@ -347,27 +331,21 @@ fun RichTextEditorScreen(
                 )
             },
             createdAt = if (noteId != null) {
-                // 编辑模式：保持原创建时间
                 existingNote?.createdAt ?: System.currentTimeMillis()
             } else {
-                // 新建模式：设置当前时间
                 System.currentTimeMillis()
             },
             updatedAt = System.currentTimeMillis()
         )
 
-        // 5. 保存到数据库
         if (noteId != null) {
-            // 编辑模式：更新笔记
             noteViewModel.updateNote(note)
             Toast.makeText(context, "更新成功", Toast.LENGTH_SHORT).show()
         } else {
-            // 新建模式：插入笔记
             noteViewModel.insertNote(note)
             Toast.makeText(context, "保存成功", Toast.LENGTH_SHORT).show()
         }
 
-        // 6. 回调
         onSaveClick(EditorNoteItem(
             id = note.id,
             title = note.title,
@@ -377,6 +355,27 @@ fun RichTextEditorScreen(
             createdAt = Date(note.createdAt),
             updatedAt = Date(note.updatedAt)
         ))
+    }
+
+    val hasTodoItems = todoItems.isNotEmpty()
+
+    // 图片编辑对话框状态
+    var showImageEditDialog by remember { mutableStateOf(false) }
+    var selectedImageUri by remember { mutableStateOf<Uri?>(null) }
+    var selectedImageIndex by remember { mutableIntStateOf(-1) }
+
+    fun showEditDialog(index: Int, uri: Uri) {
+        selectedImageIndex = index
+        selectedImageUri = uri
+        showImageEditDialog = true
+    }
+
+    val onImageEditSaveSuccess: (File) -> Unit = { savedFile: File ->
+        coroutineScope.launch {
+            withContext(Dispatchers.Main) {
+                Toast.makeText(context, "图片编辑已保存", Toast.LENGTH_SHORT).show()
+            }
+        }
     }
 
     Box {
@@ -399,7 +398,7 @@ fun RichTextEditorScreen(
                         }
                     },
                     actions = {
-                        // 撤销按钮
+                        // 撤销
                         IconButton(
                             onClick = onUndo,
                             enabled = canUndo
@@ -411,7 +410,7 @@ fun RichTextEditorScreen(
                             )
                         }
 
-                        // 重做按钮
+                        // 重做
                         IconButton(
                             onClick = onRedo,
                             enabled = canRedo
@@ -423,7 +422,26 @@ fun RichTextEditorScreen(
                             )
                         }
 
-                        // 保存按钮 - 使用新的保存逻辑
+                        // 切换按钮：只有在有待办事项时才显示
+                        if (hasTodoItems) {
+                            IconButton(
+                                onClick = {
+                                    showRichTextEditor = !showRichTextEditor
+                                }
+                            ) {
+                                Icon(
+                                    painter = if (showRichTextEditor) {
+                                        painterResource(R.drawable.outline_check_box_24) // 切换到待办列表图标
+                                    } else {
+                                        painterResource(R.drawable.outline_text_fields_24) // 切换到文本编辑器图标
+                                    },
+                                    contentDescription = if (showRichTextEditor) "显示待办列表" else "显示文本编辑器",
+                                    tint = MaterialTheme.colorScheme.primary
+                                )
+                            }
+                        }
+
+                        // 保存按钮
                         IconButton(onClick = onSaveNote) {
                             Icon(
                                 tint = MaterialTheme.colorScheme.primary,
@@ -441,7 +459,6 @@ fun RichTextEditorScreen(
                     .padding(paddingValues)
                     .imePadding()
             ) {
-                // 标题输入
                 OutlinedTextField(
                     value = title,
                     onValueChange = { title = it },
@@ -459,62 +476,214 @@ fun RichTextEditorScreen(
 
                 HorizontalDivider(modifier = Modifier.padding(vertical = 8.dp))
 
-                // 待办事项列表
-                if (todoItems.isNotEmpty()) {
-                    TodoList(
-                        todoItems = todoItems,
-                        onItemChanged = { index, todo ->
-                            todoItems[index] = todo
-                        },
-                        onItemRemoved = { index ->
-                            todoItems.removeAt(index)
-                        }
-                    )
-                    HorizontalDivider(modifier = Modifier.padding(vertical = 8.dp))
-                }
+                // 使用showRichTextEditor变量控制显示哪个视图
+                if (showRichTextEditor) {
+                    // 显示富文本编辑器
+                    Column(
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .weight(1f)
+                    ) {
+                        // 文本编辑器
+                        RichTextEditor(
+                            state = editorState,
+                            modifier = Modifier
+                                .fillMaxWidth()
+                                .weight(1f)
+                                .padding(horizontal = 16.dp, vertical = 0.dp),
+                            placeholder = { Text("开始输入笔记内容...") }
+                        )
 
-                // 富文本编辑器
-                RichTextEditor(
-                    state = editorState,
-                    modifier = Modifier
-                        .fillMaxWidth()
-                        .weight(1f)
-                        .padding(16.dp, 0.dp),
-                    placeholder = { Text("开始输入笔记内容...") }
-                )
-
-                // 已插入的图片预览
-                if (insertedImages.isNotEmpty()) {
-                    Spacer(modifier = Modifier.height(16.dp))
-                    Text(
-                        text = "已插入图片:",
-                        modifier = Modifier.padding(16.dp, 8.dp, 16.dp, 0.dp),
-                        fontSize = 14.sp,
-                        fontWeight = FontWeight.Medium
-                    )
-                    ImagePreviewGrid(
-                        images = insertedImages,
-                        onRemoveImage = { index ->
-                            insertedImages.removeAt(index)
+                        // 插入的图片预览
+                        if (insertedImages.isNotEmpty()) {
+                            Spacer(modifier = Modifier.height(16.dp))
+                            Text(
+                                text = "已插入图片:",
+                                modifier = Modifier.padding(16.dp, 8.dp, 16.dp, 0.dp),
+                                fontSize = 14.sp,
+                                fontWeight = FontWeight.Medium
+                            )
+                            // 关键修改：添加底部间距，避免被工具栏遮挡
+                            EnhancedImagePreviewGrid(
+                                images = insertedImages,
+                                onRemoveImage = { index ->
+                                    insertedImages.removeAt(index)
+                                },
+                                onAddImage = {
+                                    imagePicker.launch(
+                                        PickVisualMediaRequest(ActivityResultContracts.PickVisualMedia.ImageOnly)
+                                    )
+                                },
+                                onEditImage = { index, uri ->
+                                    showEditDialog(index, uri)
+                                },
+                                modifier = Modifier.padding(bottom = 64.dp) // 添加底部间距
+                            )
                         }
-                    )
+                    }
+                } else {
+                    // 显示待办列表
+                    Column(
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .weight(1f)
+                            .padding(horizontal = 16.dp)
+                    ) {
+                        EnhancedTodoList(
+                            todoItems = todoItems,
+                            onItemChanged = { index, todo ->
+                                todoItems[index] = todo
+                            },
+                            onItemRemoved = { index ->
+                                todoItems.removeAt(index)
+                            },
+                            onAddNewItem = {
+                                todoItems.add(EditorTodoItem(text = ""))
+                            }
+                        )
+
+                        Spacer(modifier = Modifier.height(16.dp))
+
+                        if (insertedImages.isNotEmpty()) {
+                            Text(
+                                text = "已插入图片:",
+                                fontSize = 16.sp,
+                                fontWeight = FontWeight.Medium,
+                                color = MaterialTheme.colorScheme.onSurface,
+                                modifier = Modifier.padding(bottom = 8.dp)
+                            )
+                            // 关键修改：在待办列表模式下也添加底部间距
+                            EnhancedImagePreviewGrid(
+                                images = insertedImages,
+                                onRemoveImage = { index ->
+                                    insertedImages.removeAt(index)
+                                },
+                                onAddImage = {
+                                    imagePicker.launch(
+                                        PickVisualMediaRequest(ActivityResultContracts.PickVisualMedia.ImageOnly)
+                                    )
+                                },
+                                onEditImage = { index, uri ->
+                                    showEditDialog(index, uri)
+                                },
+                                modifier = Modifier.padding(bottom = 64.dp) // 添加底部间距
+                            )
+                        } else {
+                            FilledTonalButton(
+                                onClick = {
+                                    imagePicker.launch(
+                                        PickVisualMediaRequest(ActivityResultContracts.PickVisualMedia.ImageOnly)
+                                    )
+                                },
+                                modifier = Modifier
+                                    .fillMaxWidth()
+                                    .height(48.dp)
+                                    .padding(bottom = 16.dp) // 为添加图片按钮添加底部间距
+                            ) {
+                                Icon(
+                                    imageVector = Icons.Default.Add,
+                                    contentDescription = "添加图片"
+                                )
+                                Spacer(modifier = Modifier.width(8.dp))
+                                Text(text = "添加图片")
+                            }
+                        }
+                    }
                 }
             }
         }
 
-        // 格式工具栏
-        FormattingToolbar(
-            modifier = Modifier
-                .imePadding()
-                .align(Alignment.BottomCenter),
-            editorState = editorState,
-            onImageClick = {
-                imagePicker.launch(
-                    PickVisualMediaRequest(ActivityResultContracts.PickVisualMedia.ImageOnly)
+        // 格式化工具栏只在显示文本编辑器时显示
+        if (showRichTextEditor) {
+            FormattingToolbar(
+                modifier = Modifier
+                    .imePadding()
+                    .align(Alignment.BottomCenter),
+                editorState = editorState,
+                onImageClick = {
+                    imagePicker.launch(
+                        PickVisualMediaRequest(ActivityResultContracts.PickVisualMedia.ImageOnly)
+                    )
+                },
+                onAddTodo = {
+                    todoItems.add(EditorTodoItem(text = ""))
+                    // 添加待办事项后切换到待办列表视图
+                    showRichTextEditor = false
+                }
+            )
+        }
+
+        // 图片编辑对话框
+        if (showImageEditDialog && selectedImageUri != null) {
+            ImageEditDialog(
+                imageUri = selectedImageUri!!,
+                onDismiss = {
+                    showImageEditDialog = false
+                    selectedImageUri = null
+                    selectedImageIndex = -1
+                },
+                onSaveSuccess = onImageEditSaveSuccess
+            )
+        }
+    }
+}
+
+// 图片编辑对话框组件
+@Composable
+fun ImageEditDialog(
+    imageUri: Uri,
+    onDismiss: () -> Unit,
+    onSaveSuccess: (File) -> Unit
+) {
+    val context = LocalContext.current
+    val coroutineScope = rememberCoroutineScope()
+
+    Dialog(
+        onDismissRequest = onDismiss,
+        properties = DialogProperties(usePlatformDefaultWidth = false)
+    ) {
+        Surface(
+            modifier = Modifier.fillMaxSize(),
+            color = Color.Black
+        ) {
+            Box(modifier = Modifier.fillMaxSize()) {
+                PhotoViewerEditor(
+                    imageLocalPath = imageUri,
+                    initialMode = ViewMode.EDIT, // 直接进入编辑模式
+                    onModeChange = { /* 处理模式切换 */ },
+                    onSaveSuccess = { savedFile ->
+                        onSaveSuccess(savedFile)
+                        onDismiss()
+                    },
+                    onError = { error ->
+                        coroutineScope.launch {
+                            withContext(Dispatchers.Main) {
+                                Toast.makeText(
+                                    context,
+                                    "图片编辑失败: ${error.message}",
+                                    Toast.LENGTH_SHORT
+                                ).show()
+                            }
+                        }
+                    }
                 )
-            },
-            onAddTodo = { todoItems.add(EditorTodoItem(text = "新待办事项")) }
-        )
+
+                // 关闭按钮
+                IconButton(
+                    onClick = onDismiss,
+                    modifier = Modifier
+                        .align(Alignment.TopStart)
+                        .padding(16.dp)
+                        .size(48.dp)
+                ) {
+                    Icon(
+                        androidx.compose.material.icons.Icons.Default.Close,
+                        contentDescription = "关闭编辑",
+                        tint = Color.White
+                    )
+                }
+            }
+        }
     }
 }
 
@@ -524,156 +693,16 @@ fun RichTextEditorScreen(
 @OptIn(ExperimentalRichTextApi::class)
 fun resetToPlainText(editorState: RichTextState) {
     try {
-        // 获取当前HTML内容
         val html = editorState.toHtml()
 
-        // 移除格式但保留结构（换行、段落）
         val cleanedHtml = removeFormattingKeepStructure(html)
 
-        // 重新设置清理后的HTML
         editorState.setHtml(cleanedHtml)
     } catch (e: Exception) {
-        println("HTML重置失败: ${e.message}")
-        // 最终备用方案：清空编辑器
+        e.message?.let { android.util.Log.d("HTML重置失败", it) }
+        //备用,清空编辑器
         editorState.setHtml("")
     }
-}
-
-/**
- * 待办事项列表
- */
-@Composable
-fun TodoList(
-    todoItems: List<EditorTodoItem>,
-    onItemChanged: (Int, EditorTodoItem) -> Unit,
-    onItemRemoved: (Int) -> Unit
-) {
-    Column(
-        modifier = Modifier
-            .fillMaxWidth()
-            .padding(16.dp, 0.dp)
-    ) {
-        Text(
-            text = "待办事项:",
-            fontSize = 16.sp,
-            fontWeight = FontWeight.Medium,
-            modifier = Modifier.padding(bottom = 8.dp)
-        )
-
-        todoItems.forEachIndexed { index, todoItem ->
-            TodoItemRow(
-                todo = todoItem,
-                onCheckedChange = { isChecked ->
-                    onItemChanged(index, todoItem.copy(isCompleted = isChecked))
-                },
-                onTextChange = { newText ->
-                    onItemChanged(index, todoItem.copy(text = newText))
-                },
-                onRemove = { onItemRemoved(index) }
-            )
-        }
-    }
-}
-
-/**
- * 单个待办事项行
- */
-@Composable
-fun TodoItemRow(
-    todo: EditorTodoItem,
-    onCheckedChange: (Boolean) -> Unit,
-    onTextChange: (String) -> Unit,
-    onRemove: () -> Unit
-) {
-    Row(
-        verticalAlignment = Alignment.CenterVertically,
-        modifier = Modifier
-            .fillMaxWidth()
-            .padding(vertical = 4.dp)
-    ) {
-        Checkbox(
-            checked = todo.isCompleted,
-            onCheckedChange = onCheckedChange
-        )
-
-        OutlinedTextField(
-            value = todo.text,
-            onValueChange = onTextChange,
-            modifier = Modifier.weight(1f),
-            placeholder = { Text("待办事项内容...") },
-            singleLine = true
-        )
-
-        IconButton(
-            onClick = onRemove,
-            modifier = Modifier.size(24.dp)
-        ) {
-            Icon(Icons.Default.Close, contentDescription = "删除", tint = Color.Gray)
-        }
-    }
-}
-
-/**
- * 图片预览网格
- */
-@Composable
-fun ImagePreviewGrid(
-    images: List<Uri>,
-    onRemoveImage: (Int) -> Unit
-) {
-    Row(
-        modifier = Modifier
-            .fillMaxWidth()
-            .padding(16.dp,16.dp,16.dp,45.dp)
-            .verticalScroll(rememberScrollState()),
-        horizontalArrangement = Arrangement.spacedBy(8.dp)
-    ) {
-        images.forEachIndexed { index, uri ->
-            Box(
-                contentAlignment = Alignment.TopEnd
-            ) {
-                androidx.compose.material3.Card(
-                    modifier = Modifier.size(100.dp),
-                    elevation = androidx.compose.material3.CardDefaults.cardElevation(
-                        defaultElevation = 2.dp
-                    )
-                ) {
-                    AsyncImage(
-                        model = uri,
-                        contentDescription = "插入的图片",
-                        modifier = Modifier.fillMaxSize(),
-                        contentScale = ContentScale.Crop
-                    )
-                }
-            }
-
-            IconButton(
-                onClick = { onRemoveImage(index) },
-                modifier = Modifier.size(24.dp)
-            ) {
-                Icon(Icons.Default.Close, contentDescription = "删除图片")
-            }
-
-        }
-    }
-}
-
-/**
- * 从编辑器状态创建笔记对象
- */
-private fun createNoteFromState(
-    title: String,
-    content: String, // RichTextEditorState 返回 String
-    images: List<Uri>,
-    todoItems: List<EditorTodoItem>
-): EditorNoteItem {
-    return EditorNoteItem(
-        title = title,
-        content = content,
-        imageUris = images.map { it.toString() },
-        todoItems = todoItems,
-        updatedAt = Date()
-    )
 }
 
 /**
@@ -710,19 +739,6 @@ data class EditorTodoItem(
             text = text,
             isCompleted = isCompleted,
             createdAt = this.createdAt
-        )
-    }
-}
-
-@RequiresApi(Build.VERSION_CODES.VANILLA_ICE_CREAM)
-@Preview
-@Composable
-fun RichTextEditorScreenPreview() {
-    MyNotesTheme() {
-        RichTextEditorScreen(
-            noteId = null, // 预览时使用新建模式
-            onBackClick = { },
-            onSaveClick = { },
         )
     }
 }

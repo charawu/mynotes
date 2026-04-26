@@ -78,38 +78,38 @@ fun Menu(
                     )
                 }
 
-                // 2. Alert
-                Box(
-                    modifier = Modifier
-                        .fillMaxWidth()
-                        .padding(all = 5.dp)
-                        .background(
-                            if (selectedItem == 2) MaterialTheme.colorScheme.primary else Color.Transparent,
-                            shape = RoundedCornerShape(10.dp)
-                        )
-
-                ) {
-                    DropdownMenuItem(
-                        text = { Text(
-                            stringResource(R.string.alert),
-                            color = if (selectedItem == 2) MaterialTheme.colorScheme.onPrimary
-                            else MaterialTheme.colorScheme.onBackground
-                        ) },
-                        onClick = {
-                            onItemSelected(2)
-                            onDismissRequest()
-                        },
-                        leadingIcon = {
-                            Icon(
-                                painter = painterResource(R.drawable.baseline_notifications_none_24),
-                                tint = if (selectedItem == 2) MaterialTheme.colorScheme.onPrimary
-                                else MaterialTheme.colorScheme.onBackground,
-                                contentDescription = null
-                            )
-                        },
-                        modifier = Modifier.fillMaxWidth()
-                    )
-                }
+//                // 2. Alert
+//                Box(
+//                    modifier = Modifier
+//                        .fillMaxWidth()
+//                        .padding(all = 5.dp)
+//                        .background(
+//                            if (selectedItem == 2) MaterialTheme.colorScheme.primary else Color.Transparent,
+//                            shape = RoundedCornerShape(10.dp)
+//                        )
+//
+//                ) {
+//                    DropdownMenuItem(
+//                        text = { Text(
+//                            stringResource(R.string.alert),
+//                            color = if (selectedItem == 2) MaterialTheme.colorScheme.onPrimary
+//                            else MaterialTheme.colorScheme.onBackground
+//                        ) },
+//                        onClick = {
+//                            onItemSelected(2)
+//                            onDismissRequest()
+//                        },
+//                        leadingIcon = {
+//                            Icon(
+//                                painter = painterResource(R.drawable.baseline_notifications_none_24),
+//                                tint = if (selectedItem == 2) MaterialTheme.colorScheme.onPrimary
+//                                else MaterialTheme.colorScheme.onBackground,
+//                                contentDescription = null
+//                            )
+//                        },
+//                        modifier = Modifier.fillMaxWidth()
+//                    )
+//                }
 
                 // 3. Archive
                 Box(
@@ -176,41 +176,42 @@ fun Menu(
                         modifier = Modifier.fillMaxWidth()
                     )
                 }
-            } else {
-                // 如果只显示提醒和设置，则只显示这两项
-                // 1. Alert
-                Box(
-                    modifier = Modifier
-                        .fillMaxWidth()
-                        .padding(all = 5.dp)
-                        .background(
-                            if (selectedItem == 2) MaterialTheme.colorScheme.primary else Color.Transparent,
-                            shape = RoundedCornerShape(10.dp)
-                        )
-
-                ) {
-                    DropdownMenuItem(
-                        text = { Text(
-                            stringResource(R.string.alert),
-                            color = if (selectedItem == 2) MaterialTheme.colorScheme.onPrimary
-                            else MaterialTheme.colorScheme.onBackground
-                        ) },
-                        onClick = {
-                            onItemSelected(2)
-                            onDismissRequest()
-                        },
-                        leadingIcon = {
-                            Icon(
-                                painter = painterResource(R.drawable.baseline_notifications_none_24),
-                                tint = if (selectedItem == 2) MaterialTheme.colorScheme.onPrimary
-                                else MaterialTheme.colorScheme.onBackground,
-                                contentDescription = null
-                            )
-                        },
-                        modifier = Modifier.fillMaxWidth()
-                    )
-                }
             }
+//            else {
+//                // 如果只显示提醒和设置，则只显示这两项
+//                // 1. Alert
+//                Box(
+//                    modifier = Modifier
+//                        .fillMaxWidth()
+//                        .padding(all = 5.dp)
+//                        .background(
+//                            if (selectedItem == 2) MaterialTheme.colorScheme.primary else Color.Transparent,
+//                            shape = RoundedCornerShape(10.dp)
+//                        )
+//
+//                ) {
+//                    DropdownMenuItem(
+//                        text = { Text(
+//                            stringResource(R.string.alert),
+//                            color = if (selectedItem == 2) MaterialTheme.colorScheme.onPrimary
+//                            else MaterialTheme.colorScheme.onBackground
+//                        ) },
+//                        onClick = {
+//                            onItemSelected(2)
+//                            onDismissRequest()
+//                        },
+//                        leadingIcon = {
+//                            Icon(
+//                                painter = painterResource(R.drawable.baseline_notifications_none_24),
+//                                tint = if (selectedItem == 2) MaterialTheme.colorScheme.onPrimary
+//                                else MaterialTheme.colorScheme.onBackground,
+//                                contentDescription = null
+//                            )
+//                        },
+//                        modifier = Modifier.fillMaxWidth()
+//                    )
+//                }
+//            }
 
             // 5. Setting (总是显示，不添加选中框)
             DropdownMenuItem(

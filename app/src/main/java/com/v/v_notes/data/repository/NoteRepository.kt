@@ -1,6 +1,7 @@
 package com.v.v_notes.data.repository
 
 import com.v.v_notes.data.model.Note
+import com.v.v_notes.data.model.TodoItem
 import kotlinx.coroutines.flow.Flow
 
 interface NoteRepository {
@@ -38,4 +39,18 @@ interface NoteRepository {
 
     // 3. 永久删除（清空回收站）
     suspend fun emptyTrash()
+
+    // ============ 新增的待办事项操作方法 ============
+
+    // 更新单个待办事项的完成状态
+    suspend fun updateTodoItemStatus(noteId: String, todoItemId: String, isCompleted: Boolean)
+
+    // 更新整个待办事项列表
+    suspend fun updateTodoItemsList(noteId: String, todoItems: List<TodoItem>)
+
+    // 添加新的待办事项
+    suspend fun addTodoItem(noteId: String, text: String)
+
+    // 删除待办事项
+    suspend fun removeTodoItem(noteId: String, todoItemId: String)
 }

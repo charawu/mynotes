@@ -37,6 +37,7 @@ import com.v.v_notes.data.model.Note
 import com.v.v_notes.viewmodel.NoteViewModel
 import com.v.v_notes.factory.NoteViewModelFactory
 import android.widget.Toast
+import androidx.activity.enableEdgeToEdge
 import androidx.compose.material3.Icon
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Surface
@@ -46,6 +47,7 @@ import com.v.v_notes.R
 class TrashActivity : ComponentActivity() {
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
+        enableEdgeToEdge()
         setContent {
             MyNotesTheme {
                 Surface(
@@ -123,7 +125,9 @@ fun TrashScreen(
     }
 
     Box(
-        modifier = Modifier.fillMaxSize()
+        modifier = Modifier
+            .fillMaxSize()
+            .statusBarsPadding()
     ) {
         Column(
             modifier = Modifier.fillMaxSize()

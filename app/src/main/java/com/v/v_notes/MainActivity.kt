@@ -8,8 +8,6 @@ import android.widget.Toast
 import androidx.activity.ComponentActivity
 import androidx.activity.compose.setContent
 import androidx.activity.enableEdgeToEdge
-import androidx.activity.result.ActivityResultLauncher
-import androidx.activity.result.contract.ActivityResultContracts
 import androidx.compose.animation.*
 import androidx.compose.animation.core.tween
 import androidx.compose.foundation.background
@@ -18,20 +16,25 @@ import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
+import androidx.compose.foundation.layout.Spacer
+import androidx.compose.foundation.layout.fillMaxHeight
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.statusBarsPadding
+import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.layout.wrapContentSize
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.shape.RoundedCornerShape
+import androidx.compose.foundation.text.BasicTextField
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Archive
 import androidx.compose.material.icons.filled.Close
 import androidx.compose.material.icons.filled.Delete
+import androidx.compose.material.icons.filled.Search
 import androidx.compose.material.icons.filled.Share
 import androidx.compose.material3.AlertDialog
 import androidx.compose.material3.Card
@@ -55,6 +58,7 @@ import androidx.lifecycle.viewmodel.compose.viewModel
 import com.v.v_notes.addlist.RichTextEditorActivity
 import com.v.v_notes.archive.ArchiveActivity
 import com.v.v_notes.components.*
+import com.v.v_notes.control.NoteShareHelper
 import com.v.v_notes.control.moveSelectedNotesToTrash
 import com.v.v_notes.data.database.NoteDatabase
 import com.v.v_notes.data.model.Note
@@ -66,6 +70,24 @@ import com.v.v_notes.viewmodel.NoteViewModel
 import com.v.v_notes.control.SettingsManager
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.launch
+import com.v.v_notes.NoteDetailActivity
+import com.v.v_notes.R
+import androidx.compose.ui.focus.FocusRequester
+import androidx.compose.ui.focus.focusRequester
+import androidx.compose.foundation.text.KeyboardActions
+import androidx.compose.foundation.text.KeyboardOptions
+import androidx.compose.material.icons.filled.Image
+import androidx.compose.material.icons.filled.TextFields
+import androidx.compose.material3.CardDefaults
+import androidx.compose.material3.TextButton
+import androidx.compose.ui.text.input.ImeAction
+import androidx.compose.runtime.rememberCoroutineScope
+import androidx.compose.ui.focus.onFocusChanged
+import androidx.compose.ui.graphics.SolidColor
+import androidx.compose.ui.platform.LocalFocusManager
+import androidx.compose.ui.platform.LocalSoftwareKeyboardController
+import androidx.compose.ui.text.style.TextOverflow
+import kotlinx.coroutines.withContext
 
 class MainActivity : ComponentActivity() {
     override fun onCreate(savedInstanceState: Bundle?) {
@@ -91,6 +113,10 @@ fun MyNotesApp() {
     val context = LocalContext.current
     val coroutineScope = rememberCoroutineScope()
 
+    // 获取焦点管理和键盘控制器
+    val focusManager = LocalFocusManager.current
+    val keyboardController = LocalSoftwareKeyboardController.current
+
     // 状态管理
     var isMenuExpanded by remember { mutableStateOf(false) }
     var selectedItem by remember { mutableIntStateOf(1) }
@@ -103,12 +129,62 @@ fun MyNotesApp() {
     // 控制删除确认对话框
     var showDeleteDialog by remember { mutableStateOf(false) }
 
-    // 🔴 获取数据库实例
+    // 控制分享选项对话框
+    var showShareOptionsDialog by remember { mutableStateOf(false) }
+    var notesToShare by remember { mutableStateOf<List<Note>>(emptyList()) }
+    var shareDialogTitle by remember { mutableStateOf("分享笔记") }
+
+    // 排序状态
+    var sortOrder by remember {
+        mutableStateOf(SettingsManager.getBoolean("note_sort_descending", true))
+    }
+
+    // 搜索状态
+    var searchQuery by remember { mutableStateOf("") }
+    var isSearchActive by remember { mutableStateOf(false) }
+    var searchResults by remember { mutableStateOf<List<Note>>(emptyList()) }
+    val searchFocusRequester = remember { FocusRequester() }
+
+    // 获取数据库实例
     val database = remember { NoteDatabase.getInstance(context) }
 
-    // 🔴 修复：正确收集笔记流
-    val noteFlow = database.noteDao().getAllNotes()
+    // 根据排序状态选择不同的查询
+    val noteFlow = remember(sortOrder) {
+        if (sortOrder) {
+            // 降序：时间晚的在前
+            database.noteDao().getNotesByTimeDescending()
+        } else {
+            // 升序：时间早的在前
+            database.noteDao().getNotesByTimeAscending()
+        }
+    }
+
+    // 收集笔记流
     val allNotes by noteFlow.collectAsState(initial = emptyList())
+
+    // 搜索笔记
+    LaunchedEffect(searchQuery, allNotes) {
+        if (searchQuery.isNotBlank()) {
+            val results = withContext(Dispatchers.IO) {
+                try {
+                    database.noteDao().searchNotes(searchQuery)
+                } catch (e: Exception) {
+                    Log.e("MainActivity", "搜索失败", e)
+                    emptyList()
+                }
+            }
+            searchResults = results
+        } else {
+            searchResults = emptyList()
+        }
+    }
+
+    // 确定要显示的笔记列表
+    val notesToDisplay = if (searchQuery.isNotBlank()) {
+        searchResults
+    } else {
+        allNotes
+    }
 
     val noteViewModel: NoteViewModel = viewModel(
         factory = NoteViewModelFactory(
@@ -116,7 +192,7 @@ fun MyNotesApp() {
         )
     )
 
-    // 🔴 新增：获取是否使用底部菜单的设置
+    // 获取是否使用底部菜单的设置
     val useBottomMenu by remember { mutableStateOf(SettingsManager.getBoolean("fixed_menu")) }
 
     LaunchedEffect(Unit) {
@@ -150,13 +226,68 @@ fun MyNotesApp() {
 
                             selectedNoteIds.clear()
                         },
-                        onShareClick = { /* TODO: 实现分享功能 */ },
+                        onShareClick = {
+                            // 实现分享功能
+                            val selectedNotes = allNotes.filter { it.id in selectedNoteIds }
+                            if (selectedNotes.isEmpty()) {
+                                Toast.makeText(context, "请先选择笔记", Toast.LENGTH_SHORT).show()
+                                return@SelectionTopBar
+                            }
+
+                            notesToShare = selectedNotes
+                            shareDialogTitle = "分享 ${selectedNotes.size} 条笔记"
+
+                            // 🔧 修复：实时计算图片URI
+                            val imageUris = selectedNotes.flatMap { note ->
+                                NoteShareHelper.convertImageUris(context, note.imageUris)
+                            }
+
+                            // 检查是否有图片
+                            if (imageUris.isEmpty()) {
+                                // 没有图片，直接分享文本
+                                if (selectedNotes.size == 1) {
+                                    // 单条笔记
+                                    NoteShareHelper.shareNote(
+                                        context = context,
+                                        note = selectedNotes.first(),
+                                        imageUris = emptyList(),
+                                        shareType = NoteShareHelper.ShareType.TEXT,
+                                        chooserTitle = "分享笔记: ${selectedNotes.first().title}"
+                                    )
+                                } else {
+                                    // 多条笔记，分享合并的文本
+                                    shareMultipleNotes(context, selectedNotes)
+                                }
+                            } else {
+                                // 🔧 修复：有图片，显示选项对话框
+                                showShareOptionsDialog = true
+                            }
+                        },
                         onCancelSelection = { selectedNoteIds.clear() }
                     )
                 } else {
                     NormalTopBar(
                         onMenuClick = { isMenuExpanded = true },
-                        onAccountClick = { /* 处理账户点击 */ }
+                        onAccountClick = { /* 处理账户点击 */ },
+                        onSearchClick = { isSearchActive = true },
+                        searchQuery = searchQuery,
+                        onSearchQueryChange = { searchQuery = it },
+                        onSearchFocusChange = { isSearchActive = it },
+                        searchFocusRequester = searchFocusRequester,
+                        sortOrder = sortOrder,
+                        onSortClick = {
+                            // 切换排序顺序
+                            val newSortOrder = !sortOrder
+                            sortOrder = newSortOrder
+                            SettingsManager.putBoolean("note_sort_descending", newSortOrder)
+
+                            // 显示Toast提示
+                            Toast.makeText(
+                                context,
+                                if (newSortOrder) "已按时间降序排序" else "已按时间升序排序",
+                                Toast.LENGTH_SHORT
+                            ).show()
+                        }
                     )
                 }
             }
@@ -169,20 +300,21 @@ fun MyNotesApp() {
                 onItemSelected = { itemId ->
                     selectedItem = itemId
                     when (itemId) {
-                        1 -> { selectedItem = 1 }
-                        2 -> { selectedItem = 2 }
+                        1 -> {
+                            selectedItem = 1
+                        }
                         3 -> {
-                            selectedItem = 3
+                            selectedItem = 1
                             val intent = Intent(context, ArchiveActivity::class.java)
                             context.startActivity(intent)
                         }
                         4 -> {
-                            selectedItem = 4
+                            selectedItem = 1
                             val intent = Intent(context, TrashActivity::class.java)
                             context.startActivity(intent)
                         }
                         5 -> {
-                            selectedItem = 5
+                            selectedItem = 1
                             val intent = Intent(context, SettingActivity::class.java)
                             context.startActivity(intent)
                         }
@@ -192,14 +324,14 @@ fun MyNotesApp() {
                 showOnlyAlertAndSetting = useBottomMenu
             )
 
-            // 笔记列表区域，根据是否使用底部菜单调整权重
+            // 笔记列表区域
             Box(
                 modifier = Modifier
                     .fillMaxWidth()
                     .weight(1f)
             ) {
                 NotesListScreen(
-                    allNotes = allNotes,
+                    allNotes = notesToDisplay,
                     selectedNoteIds = selectedNoteIds,
                     isSelectionMode = isSelectionMode,
                     onNoteClick = { noteId ->
@@ -223,9 +355,24 @@ fun MyNotesApp() {
                         }
                     }
                 )
+
+                // 🔧 新增：当搜索激活时，添加一个透明的点击层覆盖整个屏幕
+                if (isSearchActive) {
+                    Box(
+                        modifier = Modifier
+                            .fillMaxSize()
+                            .clickable {
+                                // 点击空白区域时关闭键盘和搜索焦点
+                                keyboardController?.hide()
+                                focusManager.clearFocus()
+                                isSearchActive = false
+                            }
+                            .background(MaterialTheme.colorScheme.background.copy(alpha = 0.01f))
+                    )
+                }
             }
 
-            // 🔴 新增：如果使用底部菜单，则显示底部导航
+            // 如果使用底部菜单，则显示底部导航
             if (useBottomMenu) {
                 BottomNavMenu(
                     selectedItem = selectedItem,
@@ -252,12 +399,12 @@ fun MyNotesApp() {
             }
         }
 
-        // 🔴 修改：浮动按钮区域，根据是否使用底部菜单调整位置
+        // 浮动按钮区域
         Box(
             modifier = Modifier
                 .fillMaxSize()
                 .padding(
-                    bottom = if (useBottomMenu) 96.dp else 40.dp, // 当有底部菜单时，向上移动
+                    bottom = if (useBottomMenu) 96.dp else 40.dp,
                     end = 40.dp
                 ),
             contentAlignment = Alignment.BottomEnd
@@ -265,13 +412,22 @@ fun MyNotesApp() {
             Column(
                 modifier = Modifier
                     .align(Alignment.BottomEnd)
-                    .padding(bottom = 65.dp) // 恢复为原来的间距
+                    .padding(bottom = 65.dp)
             ) {
                 AddButtonList(
                     expanded = isActive,
-                    onPhotoClick = { isActive = false },
-                    onDrawClick = { isActive = false },
-                    onCheckClick = { isActive = false },
+                    onPhotoClick = {
+                        isActive = false
+                        val intent = Intent(context, RichTextEditorActivity::class.java)
+                        intent.putExtra("quickAction","image")
+                        context.startActivity(intent)
+                                   },
+                    onCheckClick = {
+                        isActive = false
+                        val intent = Intent(context, RichTextEditorActivity::class.java)
+                        intent.putExtra("quickAction","todo")
+                        context.startActivity(intent)
+                                   },
                     onTextClick = {
                         isActive = false
                         val intent = Intent(context, RichTextEditorActivity::class.java)
@@ -291,9 +447,9 @@ fun MyNotesApp() {
     if (showDeleteDialog) {
         AlertDialog(
             onDismissRequest = { showDeleteDialog = false },
-            title = { Text("删除笔记") },
+            title = { Text(stringResource(R.string.delete_title)) },
             text = {
-                Text("确定要删除选中的 ${selectedNoteIds.size} 条笔记吗？此操作不可恢复。")
+                Text("${stringResource(R.string.delete_1)}${selectedNoteIds.size}${stringResource(R.string.delete_2)}")
             },
             confirmButton = {
                 androidx.compose.material3.TextButton(
@@ -311,12 +467,121 @@ fun MyNotesApp() {
                         selectedNoteIds.clear()
                     }
                 ) {
-                    Text("删除")
+                    Text(stringResource(R.string.delete))
                 }
             },
             dismissButton = {
                 androidx.compose.material3.TextButton(
                     onClick = { showDeleteDialog = false }
+                ) {
+                    Text(stringResource(R.string.cancel))
+                }
+            }
+        )
+    }
+
+    // 分享选项对话框
+    if (showShareOptionsDialog && notesToShare.isNotEmpty()) {
+        // 实时计算图片URI
+        val imageUris = notesToShare.flatMap { note ->
+            NoteShareHelper.convertImageUris(context, note.imageUris)
+        }
+
+        AlertDialog(
+            onDismissRequest = {
+                showShareOptionsDialog = false
+                notesToShare = emptyList()
+            },
+            title = { Text(shareDialogTitle) },
+            text = {
+                Column {
+                    Text("请选择要分享的内容：")
+                    Spacer(modifier = Modifier.height(16.dp))
+
+                    LazyColumn {
+                        // 1. 仅分享文本
+                        item {
+                            ShareOptionItem(
+                                icon = Icons.Default.TextFields,
+                                title = "仅分享文本",
+                                description = "只分享笔记的文本内容",
+                                onClick = {
+                                    showShareOptionsDialog = false
+                                    if (notesToShare.size == 1) {
+                                        NoteShareHelper.shareNote(
+                                            context = context,
+                                            note = notesToShare.first(),
+                                            imageUris = emptyList(),
+                                            shareType = NoteShareHelper.ShareType.TEXT,
+                                            chooserTitle = "分享笔记: ${notesToShare.first().title}"
+                                        )
+                                    } else {
+                                        shareMultipleNotes(context, notesToShare)
+                                    }
+                                    notesToShare = emptyList()
+                                }
+                            )
+                        }
+
+                        // 2. 仅分享图片（如果有图片）
+                        if (imageUris.isNotEmpty()) {
+                            item {
+                                ShareOptionItem(
+                                    icon = Icons.Default.Image,
+                                    title = "仅分享图片",
+                                    description = "只分享笔记中的图片",
+                                    onClick = {
+                                        showShareOptionsDialog = false
+                                        if (notesToShare.size == 1) {
+                                            NoteShareHelper.shareNote(
+                                                context = context,
+                                                note = notesToShare.first(),
+                                                imageUris = imageUris,
+                                                shareType = NoteShareHelper.ShareType.IMAGE,
+                                                chooserTitle = "分享图片: ${notesToShare.first().title}"
+                                            )
+                                        } else {
+                                            shareMultipleNotesImages(context, notesToShare, imageUris)
+                                        }
+                                        notesToShare = emptyList()
+                                    }
+                                )
+                            }
+                        }
+
+                        // 3. 分享全部
+                        item {
+                            ShareOptionItem(
+                                icon = Icons.Default.Share,
+                                title = "分享全部",
+                                description = "分享文本和所有图片",
+                                onClick = {
+                                    showShareOptionsDialog = false
+                                    if (notesToShare.size == 1) {
+                                        NoteShareHelper.shareNote(
+                                            context = context,
+                                            note = notesToShare.first(),
+                                            imageUris = imageUris,
+                                            shareType = NoteShareHelper.ShareType.ALL,
+                                            chooserTitle = "分享笔记: ${notesToShare.first().title}"
+                                        )
+                                    } else {
+                                        shareMultipleNotesAll(context, notesToShare, imageUris)
+                                    }
+                                    notesToShare = emptyList()
+                                }
+                            )
+                        }
+                    }
+                }
+            },
+            confirmButton = {},
+            dismissButton = {
+                TextButton(
+                    onClick = {
+                        showShareOptionsDialog = false
+                        notesToShare = emptyList()
+                    }
                 ) {
                     Text("取消")
                 }
@@ -325,18 +590,27 @@ fun MyNotesApp() {
     }
 }
 
-/**
- * 普通模式顶部工具栏
- */
 @Composable
 fun NormalTopBar(
     onMenuClick: () -> Unit,
-    onAccountClick: () -> Unit
+    onAccountClick: () -> Unit,
+    onSearchClick: () -> Unit,
+    searchQuery: String,
+    onSearchQueryChange: (String) -> Unit,
+    onSearchFocusChange: (Boolean) -> Unit,
+    searchFocusRequester: FocusRequester,
+    sortOrder: Boolean,
+    onSortClick: () -> Unit
 ) {
+    var isSearching by remember { mutableStateOf(false) }
+    val keyboardController = LocalSoftwareKeyboardController.current
+    val focusManager = LocalFocusManager.current
+    val context = LocalContext.current
+
     Row(
         modifier = Modifier
             .fillMaxWidth()
-            .padding(5.dp)
+            .padding(horizontal = 16.dp, vertical = 8.dp)
             .statusBarsPadding(),
         verticalAlignment = Alignment.CenterVertically
     ) {
@@ -347,51 +621,100 @@ fun NormalTopBar(
             )
         }
 
-        // 搜索栏
         Card(
             modifier = Modifier
                 .weight(1f)
                 .height(48.dp),
-            shape = RoundedCornerShape(40.dp)
+            shape = RoundedCornerShape(24.dp),
+            colors = CardDefaults.cardColors(
+                containerColor = MaterialTheme.colorScheme.surfaceVariant
+            )
         ) {
-            Box(
+            Row(
                 modifier = Modifier
                     .fillMaxSize()
-                    .clickable(onClick = {})
+                    .padding(horizontal = 16.dp),
+                verticalAlignment = Alignment.CenterVertically
             ) {
-                Row(
+                Icon(
+                    imageVector = Icons.Default.Search,
+                    contentDescription = "搜索",
+                    tint = MaterialTheme.colorScheme.onSurfaceVariant,
+                    modifier = Modifier.size(20.dp)
+                )
+
+                BasicTextField(
+                    value = searchQuery,
+                    onValueChange = onSearchQueryChange,
                     modifier = Modifier
-                        .padding(horizontal = 16.dp)
-                        .fillMaxSize(),
-                    horizontalArrangement = Arrangement.End,
-                    verticalAlignment = Alignment.CenterVertically
+                        .weight(1f)
+                        .fillMaxHeight()
+                        .padding(horizontal = 12.dp)
+                        .focusRequester(searchFocusRequester)
+                        .onFocusChanged { focusState ->
+                            isSearching = focusState.isFocused
+                            onSearchFocusChange(focusState.isFocused)
+                        },
+                    textStyle = MaterialTheme.typography.bodyMedium.copy(
+                        color = MaterialTheme.colorScheme.onSurface
+                    ),
+                    maxLines = 1,
+                    singleLine = true,
+                    cursorBrush = SolidColor(
+                        if (isSearching) {
+                            MaterialTheme.colorScheme.primary
+                        } else {
+                            MaterialTheme.colorScheme.secondary.copy(alpha = 0.5f)
+                        }
+                    ),
+                    keyboardOptions = KeyboardOptions(
+                        imeAction = ImeAction.Done
+                    ),
+                    keyboardActions = KeyboardActions(
+                        onDone = {
+                            keyboardController?.hide()
+                            focusManager.clearFocus()
+                            onSearchFocusChange(false)
+                        }
+                    ),
+                    decorationBox = { innerTextField ->
+                        Box(
+                            modifier = Modifier.fillMaxSize(),
+                            contentAlignment = Alignment.CenterStart
+                        ) {
+                            if (searchQuery.isEmpty()) {
+                                Text(
+                                    text = "搜索 Nots",
+                                    style = MaterialTheme.typography.bodyMedium.copy(
+                                        color = MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.6f)
+                                    ),
+                                    maxLines = 1,
+                                    overflow = TextOverflow.Ellipsis
+                                )
+                            }
+                            innerTextField()
+                        }
+                    }
+                )
+
+                IconButton(
+                    onClick = onSortClick,
+                    modifier = Modifier.size(40.dp)
                 ) {
-                    Text(
-                        modifier = Modifier.weight(0.5f),
-                        text = stringResource(R.string.search_box),
-                        color = MaterialTheme.colorScheme.primary
+                    Icon(
+                        painter = painterResource(R.drawable.baseline_import_export_24),
+                        contentDescription = "排序",
+                        tint = if (sortOrder) {
+                            MaterialTheme.colorScheme.primary
+                        } else {
+                            MaterialTheme.colorScheme.secondary
+                        },
+                        modifier = Modifier.size(20.dp)
                     )
-
-                    IconButton(onClick = {}) {
-                        Icon(
-                            tint = MaterialTheme.colorScheme.primary,
-                            painter = painterResource(R.drawable.baseline_splitscreen_24),
-                            contentDescription = "排列"
-                        )
-                    }
-
-                    IconButton(onClick = {}) {
-                        Icon(
-                            tint = MaterialTheme.colorScheme.primary,
-                            painter = painterResource(R.drawable.baseline_import_export_24),
-                            contentDescription = "排序"
-                        )
-                    }
                 }
             }
         }
 
-        // 账户按钮
         IconButton(onClick = onAccountClick) {
             Icon(
                 painter = painterResource(R.drawable.ic_account_box),
@@ -401,9 +724,6 @@ fun NormalTopBar(
     }
 }
 
-/**
- * 选择模式顶部工具栏
- */
 @Composable
 fun SelectionTopBar(
     selectedCount: Int,
@@ -421,7 +741,6 @@ fun SelectionTopBar(
             .padding(horizontal = 8.dp),
         verticalAlignment = Alignment.CenterVertically
     ) {
-        // 返回/取消选择按钮
         IconButton(
             onClick = onCancelSelection,
             modifier = Modifier.size(48.dp)
@@ -433,7 +752,6 @@ fun SelectionTopBar(
             )
         }
 
-        // 选中数量
         Text(
             text = "已选中 $selectedCount 项",
             color = MaterialTheme.colorScheme.onPrimary,
@@ -444,7 +762,6 @@ fun SelectionTopBar(
                 .padding(start = 8.dp)
         )
 
-        // 删除按钮
         IconButton(
             onClick = onDeleteClick,
             modifier = Modifier.size(48.dp)
@@ -456,7 +773,6 @@ fun SelectionTopBar(
             )
         }
 
-        // 分享按钮
         IconButton(
             onClick = onShareClick,
             modifier = Modifier.size(48.dp)
@@ -468,7 +784,6 @@ fun SelectionTopBar(
             )
         }
 
-        // 归档按钮
         IconButton(
             onClick = onArchiveClick,
             modifier = Modifier.size(48.dp)
@@ -528,6 +843,171 @@ fun NotesListScreen(
             }
         }
     }
+}
+
+@Composable
+fun ShareOptionItem(
+    icon: androidx.compose.ui.graphics.vector.ImageVector,
+    title: String,
+    description: String,
+    onClick: () -> Unit
+) {
+    Card(
+        onClick = onClick,
+        modifier = Modifier
+            .fillMaxWidth()
+            .padding(vertical = 4.dp),
+        colors = CardDefaults.cardColors(
+            containerColor = MaterialTheme.colorScheme.surfaceVariant
+        )
+    ) {
+        Row(
+            modifier = Modifier
+                .fillMaxWidth()
+                .padding(12.dp),
+            verticalAlignment = Alignment.CenterVertically
+        ) {
+            Icon(
+                imageVector = icon,
+                contentDescription = null,
+                modifier = Modifier.size(24.dp)
+            )
+            Spacer(modifier = Modifier.width(12.dp))
+            Column {
+                Text(
+                    text = title,
+                    style = MaterialTheme.typography.bodyLarge
+                )
+                Text(
+                    text = description,
+                    style = MaterialTheme.typography.bodySmall,
+                    color = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.6f)
+                )
+            }
+        }
+    }
+}
+
+/**
+ * 分享多条笔记的文本
+ */
+private fun shareMultipleNotes(context: android.content.Context, notes: List<Note>) {
+    if (notes.isEmpty()) {
+        Toast.makeText(context, "没有可分享的笔记", Toast.LENGTH_SHORT).show()
+        return
+    }
+
+    val builder = StringBuilder()
+    if (notes.size == 1) {
+        builder.append(NoteShareHelper.buildShareText(notes.first()))
+    } else {
+        builder.append("分享 ${notes.size} 条笔记\n\n")
+        notes.forEachIndexed { index, note ->
+            builder.append("${index + 1}. ${note.title}\n")
+            val plainText = NoteShareHelper.buildShareText(note)
+            builder.append(plainText)
+            builder.append("\n\n")
+        }
+    }
+
+    val shareText = builder.toString().trim()
+    val shareIntent = Intent().apply {
+        action = Intent.ACTION_SEND
+        type = "text/plain"
+        putExtra(Intent.EXTRA_TEXT, shareText)
+        putExtra(Intent.EXTRA_SUBJECT, "分享笔记")
+    }
+    context.startActivity(Intent.createChooser(shareIntent, "分享笔记"))
+}
+
+/**
+ * 分享多条笔记的图片
+ */
+private fun shareMultipleNotesImages(
+    context: android.content.Context,
+    notes: List<Note>,
+    imageUris: List<android.net.Uri>
+) {
+    if (imageUris.isEmpty()) {
+        Toast.makeText(context, "没有可分享的图片", Toast.LENGTH_SHORT).show()
+        return
+    }
+
+    val shareIntent = if (imageUris.size == 1) {
+        Intent().apply {
+            action = Intent.ACTION_SEND
+            type = "image/*"
+            putExtra(Intent.EXTRA_STREAM, imageUris[0])
+            addFlags(Intent.FLAG_GRANT_READ_URI_PERMISSION)
+        }
+    } else {
+        Intent().apply {
+            action = Intent.ACTION_SEND_MULTIPLE
+            type = "image/*"
+            putParcelableArrayListExtra(Intent.EXTRA_STREAM, ArrayList(imageUris))
+            addFlags(Intent.FLAG_GRANT_READ_URI_PERMISSION)
+        }
+    }
+
+    context.startActivity(Intent.createChooser(shareIntent, "分享图片"))
+}
+
+/**
+ * 分享多条笔记的全部内容（文本+图片）
+ */
+private fun shareMultipleNotesAll(
+    context: android.content.Context,
+    notes: List<Note>,
+    imageUris: List<android.net.Uri>
+) {
+    if (notes.isEmpty()) {
+        Toast.makeText(context, "没有可分享的笔记", Toast.LENGTH_SHORT).show()
+        return
+    }
+
+    val builder = StringBuilder()
+    if (notes.size == 1) {
+        builder.append(NoteShareHelper.buildShareText(notes.first()))
+    } else {
+        builder.append("分享 ${notes.size} 条笔记\n\n")
+        notes.forEachIndexed { index, note ->
+            builder.append("${index + 1}. ${note.title}\n")
+            val plainText = NoteShareHelper.buildShareText(note)
+            builder.append(plainText)
+            builder.append("\n\n")
+        }
+    }
+
+    val shareText = builder.toString().trim()
+
+    val shareIntent = if (imageUris.isEmpty()) {
+        Intent().apply {
+            action = Intent.ACTION_SEND
+            type = "text/plain"
+            putExtra(Intent.EXTRA_TEXT, shareText)
+            putExtra(Intent.EXTRA_SUBJECT, "分享笔记")
+        }
+    } else if (imageUris.size == 1) {
+        Intent().apply {
+            action = Intent.ACTION_SEND
+            type = "image/*"
+            putExtra(Intent.EXTRA_STREAM, imageUris[0])
+            putExtra(Intent.EXTRA_TEXT, shareText)
+            putExtra(Intent.EXTRA_SUBJECT, "分享笔记")
+            addFlags(Intent.FLAG_GRANT_READ_URI_PERMISSION)
+        }
+    } else {
+        Intent().apply {
+            action = Intent.ACTION_SEND_MULTIPLE
+            type = "image/*"
+            putParcelableArrayListExtra(Intent.EXTRA_STREAM, ArrayList(imageUris))
+            putExtra(Intent.EXTRA_TEXT, shareText)
+            putExtra(Intent.EXTRA_SUBJECT, "分享笔记")
+            addFlags(Intent.FLAG_GRANT_READ_URI_PERMISSION)
+        }
+    }
+
+    context.startActivity(Intent.createChooser(shareIntent, "分享笔记"))
 }
 
 @Preview(showBackground = true)

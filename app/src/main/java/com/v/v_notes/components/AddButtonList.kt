@@ -24,7 +24,7 @@ import com.v.v_notes.ui.theme.MyNotesTheme
 @Composable
 fun AddButtonList(
     onPhotoClick: () -> Unit = {},
-    onDrawClick: () -> Unit = {},
+    //onDrawClick: () -> Unit = {},  TODO:draw
     onCheckClick: () -> Unit = {},
     onTextClick: () -> Unit = {},
     expanded: Boolean = false
@@ -114,34 +114,34 @@ fun AddButtonList(
                 )
             )
         ) {
-            Box(
-                modifier = modifier
-                    .clickable(
-                        onClick = onDrawClick
-                    ),
-                contentAlignment = Alignment.Center
-            ) {
-                Row(
-                    verticalAlignment = Alignment.CenterVertically
-                ) {
-                    IconButton(
-                        onClick = onDrawClick,
-                        modifier = Modifier
-                    ) {
-                        Icon(
-                            painter = painterResource(R.drawable.outline_draw_24),
-                            contentDescription = null
-                        )
-                    }
-                    Text(
-                        modifier = Modifier.padding(end = 5.dp),
-                        text = stringResource(R.string.add_menu_draw)
-                    )
-                }
-            }
+//            Box(
+//                modifier = modifier
+//                    .clickable(
+//                        onClick = onDrawClick
+//                    ),
+//                contentAlignment = Alignment.Center
+//            ) {
+//                Row(
+//                    verticalAlignment = Alignment.CenterVertically
+//                ) {
+//                    IconButton(
+//                        onClick = onDrawClick,
+//                        modifier = Modifier
+//                    ) {
+//                        Icon(
+//                            painter = painterResource(R.drawable.outline_draw_24),
+//                            contentDescription = null
+//                        )
+//                    }
+//                    Text(
+//                        modifier = Modifier.padding(end = 5.dp),
+//                        text = stringResource(R.string.add_menu_draw)
+//                    )
+//                }
+//            }  TODO:draw
         }
 
-        Spacer(modifier = Modifier.height(5.dp))
+        //Spacer(modifier = Modifier.height(5.dp))
 
         AnimatedVisibility(
             visible = expanded,
@@ -253,7 +253,7 @@ fun AddButtonListPreview(){
     MyNotesTheme() {
         AddButtonList(
             onPhotoClick = {},
-            onDrawClick = {},
+//            onDrawClick = {},  TODO:draw
             onCheckClick = {},
             onTextClick = {},
             expanded = true
