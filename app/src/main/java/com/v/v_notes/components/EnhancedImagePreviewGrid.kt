@@ -1,6 +1,7 @@
 package com.v.v_notes.components
 
 import android.net.Uri
+import androidx.compose.foundation.background
 import androidx.compose.foundation.lazy.LazyRow
 import androidx.compose.foundation.lazy.itemsIndexed
 import androidx.compose.material.icons.Icons
@@ -31,6 +32,7 @@ import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
 import androidx.compose.ui.unit.sp
 import androidx.compose.runtime.key
+import androidx.compose.ui.graphics.Color
 
 @Composable
 fun EnhancedImagePreviewGrid(
@@ -85,14 +87,19 @@ fun EnhancedImagePreviewGrid(
                         IconButton(
                             onClick = { onRemoveImage(index) },
                             modifier = Modifier
-                                .size(28.dp)
+                                .size(32.dp)
                                 .padding(4.dp)
                         ) {
                             Icon(
-                                Icons.Default.Close,
+                                imageVector = Icons.Default.Close,
                                 contentDescription = "删除图片",
-                                tint = MaterialTheme.colorScheme.onErrorContainer,
-                                modifier = Modifier.size(16.dp)
+                                tint = Color.Red,
+                                modifier = Modifier
+                                    .size(25.dp)
+                                    .background(
+                                        MaterialTheme.colorScheme.primary,
+                                        shape = MaterialTheme.shapes.large
+                                    )
                             )
                         }
                     }
