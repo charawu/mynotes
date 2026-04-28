@@ -7,7 +7,6 @@ import androidx.activity.compose.setContent
 import androidx.compose.animation.Crossfade
 import androidx.compose.animation.core.tween
 import androidx.compose.foundation.background
-import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
 import androidx.compose.material.icons.Icons
@@ -15,8 +14,6 @@ import androidx.compose.material.icons.filled.Archive
 import androidx.compose.material.icons.filled.Close
 import androidx.compose.material.icons.filled.Delete
 import androidx.compose.material.icons.filled.Share
-import androidx.compose.material3.*
-import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.LocalContext
@@ -24,10 +21,7 @@ import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
-import androidx.lifecycle.viewmodel.compose.viewModel
-import android.app.Application
 import androidx.compose.material3.TextButton
-import com.v.v_notes.components.*
 import com.v.v_notes.data.database.NoteDatabase
 import com.v.v_notes.ui.theme.MyNotesTheme
 import kotlinx.coroutines.Dispatchers
@@ -35,8 +29,6 @@ import kotlinx.coroutines.launch
 import androidx.compose.runtime.getValue
 import com.v.v_notes.NoteDetailActivity
 import com.v.v_notes.data.model.Note
-import com.v.v_notes.viewmodel.NoteViewModel
-import com.v.v_notes.factory.NoteViewModelFactory
 import com.v.v_notes.MainActivity
 import com.v.v_notes.R
 import com.v.v_notes.control.SettingsManager
@@ -45,9 +37,41 @@ import com.v.v_notes.trash.TrashActivity
 import com.v.v_notes.control.NoteShareHelper
 import android.widget.Toast
 import androidx.activity.enableEdgeToEdge
+import androidx.compose.foundation.layout.Arrangement
+import androidx.compose.foundation.layout.Box
+import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.layout.Row
+import androidx.compose.foundation.layout.Spacer
+import androidx.compose.foundation.layout.fillMaxSize
+import androidx.compose.foundation.layout.fillMaxWidth
+import androidx.compose.foundation.layout.height
+import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.layout.size
+import androidx.compose.foundation.layout.statusBarsPadding
+import androidx.compose.foundation.layout.width
+import androidx.compose.foundation.layout.wrapContentSize
 import androidx.compose.material.icons.filled.Image
 import androidx.compose.material.icons.filled.TextFields
 import androidx.compose.material.icons.filled.Unarchive
+import androidx.compose.material3.AlertDialog
+import androidx.compose.material3.Card
+import androidx.compose.material3.CardDefaults
+import androidx.compose.material3.Icon
+import androidx.compose.material3.IconButton
+import androidx.compose.material3.MaterialTheme
+import androidx.compose.material3.Surface
+import androidx.compose.material3.Text
+import androidx.compose.runtime.Composable
+import androidx.compose.runtime.collectAsState
+import androidx.compose.runtime.mutableIntStateOf
+import androidx.compose.runtime.mutableStateListOf
+import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.remember
+import androidx.compose.runtime.rememberCoroutineScope
+import androidx.compose.runtime.setValue
+import com.v.v_notes.components.BottomNavMenu
+import com.v.v_notes.components.Menu
+import com.v.v_notes.components.NoteListItem
 
 class ArchiveActivity : ComponentActivity() {
     override fun onCreate(savedInstanceState: Bundle?) {
@@ -76,40 +100,33 @@ fun ArchiveScreen(
     val context = LocalContext.current
     val coroutineScope = rememberCoroutineScope()
 
-    // 选中的笔记ID列表
+    //选中笔记ID列表
     val selectedNoteIds = remember { mutableStateListOf<String>() }
     val isSelectionMode = selectedNoteIds.isNotEmpty()
 
-    // 控制删除确认对话框
+    //删除确认对话
     var showDeleteDialog by remember { mutableStateOf(false) }
     var showUnarchiveDialog by remember { mutableStateOf(false) }
 
-    // 🔴 新增：控制分享选项对话框
+    //分享选项对话
     var showShareOptionsDialog by remember { mutableStateOf(false) }
     var notesToShare by remember { mutableStateOf<List<Note>>(emptyList()) }
     var shareDialogTitle by remember { mutableStateOf("分享归档笔记") }
 
-    // 菜单展开状态
+    //菜单状态
     var isMenuExpanded by remember { mutableStateOf(false) }
     var selectedItem by remember { mutableIntStateOf(3) } // 默认选中Archive(3)
 
-    // 获取是否使用底部菜单的设置
+    //底部菜单的设置量
     val useBottomMenu by remember { mutableStateOf(SettingsManager.getBoolean("fixed_menu")) }
 
-    // 获取数据库实例
     val database = remember { NoteDatabase.getInstance(context) }
 
-    // 查询归档笔记
+    //查询归档笔记
     val archivedNotesFlow = database.noteDao().getAllArchivedNotes()
     val archivedNotes by archivedNotesFlow.collectAsState(initial = emptyList())
 
-    val noteViewModel: NoteViewModel = viewModel(
-        factory = NoteViewModelFactory(
-            application = LocalContext.current.applicationContext as Application
-        )
-    )
-
-    // 🔴 新增：获取选中笔记的图片URI
+    //选中笔记图片URI
     val selectedNotesImageUris = remember(selectedNoteIds, archivedNotes) {
         if (selectedNoteIds.isNotEmpty()) {
             val selectedNotes = archivedNotes.filter { it.id in selectedNoteIds }
@@ -122,7 +139,7 @@ fun ArchiveScreen(
         }
     }
 
-    // 删除已归档笔记
+    //删除归档笔记
     val deleteSelectedNotes = {
         selectedNoteIds.forEach { noteId ->
             coroutineScope.launch(Dispatchers.IO) {
@@ -132,7 +149,7 @@ fun ArchiveScreen(
         selectedNoteIds.clear()
     }
 
-    // 取消归档（恢复到正常状态）
+    //取消归档
     val unarchiveSelectedNotes = {
         selectedNoteIds.forEach { noteId ->
             coroutineScope.launch(Dispatchers.IO) {
@@ -150,7 +167,7 @@ fun ArchiveScreen(
         Column(
             modifier = Modifier.fillMaxSize()
         ) {
-            // 顶部工具栏
+            //顶部工具蓝
             Crossfade(
                 targetState = isSelectionMode,
                 animationSpec = tween(300)
@@ -161,7 +178,6 @@ fun ArchiveScreen(
                         onDeleteClick = { showDeleteDialog = true },
                         onUnarchiveClick = { showUnarchiveDialog = true },
                         onShareClick = {
-                            // 🔴 修改：实现分享功能
                             val selectedNotes = archivedNotes.filter { it.id in selectedNoteIds }
                             if (selectedNotes.isEmpty()) {
                                 Toast.makeText(context, "请先选择笔记", Toast.LENGTH_SHORT).show()
@@ -171,11 +187,11 @@ fun ArchiveScreen(
                             notesToShare = selectedNotes
                             shareDialogTitle = "分享 ${selectedNotes.size} 条归档笔记"
 
-                            // 检查是否有图片
+                            //检查是否有图片
                             if (selectedNotesImageUris.isEmpty()) {
-                                // 没有图片，直接分享文本
+
                                 if (selectedNotes.size == 1) {
-                                    // 单条笔记
+
                                     NoteShareHelper.shareNote(
                                         context = context,
                                         note = selectedNotes.first(),
@@ -184,11 +200,11 @@ fun ArchiveScreen(
                                         chooserTitle = "分享归档笔记: ${selectedNotes.first().title}"
                                     )
                                 } else {
-                                    // 多条笔记，分享合并的文本
+                                    //多条笔记,分享合并的文本
                                     shareMultipleNotes(context, selectedNotes, "归档笔记")
                                 }
                             } else {
-                                // 有图片，显示选项对话框
+                                //有图片,显示对话框
                                 showShareOptionsDialog = true
                             }
                         },
@@ -202,7 +218,7 @@ fun ArchiveScreen(
                 }
             }
 
-            // 顶部菜单
+            //顶部菜单
             Menu(
                 modifier = Modifier
                     .wrapContentSize(Alignment.TopStart),
@@ -211,26 +227,26 @@ fun ArchiveScreen(
                 onItemSelected = { itemId ->
                     selectedItem = itemId
                     when (itemId) {
-                        1 -> { // Keep/主界面
+                        1 -> {//主
                             selectedItem = 1
                             val intent = Intent(context, MainActivity::class.java)
                             context.startActivity(intent)
-                            onBackClick() // 关闭当前页面
+                            onBackClick()
                         }
-                        2 -> { // Alert/提醒
+                        2 -> {//提醒
                             selectedItem = 2
-                            // TODO: 实现提醒页面
+                            //TODO提醒页面
                         }
-                        3 -> { // Archive/归档 - 当前页面，不跳转
+                        3 -> {//归档
                             selectedItem = 3
                         }
-                        4 -> { // Trash/回收站
+                        4 -> {//垃圾桶
                             selectedItem = 4
                             val intent = Intent(context, TrashActivity::class.java)
                             context.startActivity(intent)
-                            onBackClick() // 关闭当前页面
+                            onBackClick()
                         }
-                        5 -> { // Setting/设置
+                        5 -> { //设置
                             selectedItem = 5
                             val intent = Intent(context, SettingActivity::class.java)
                             context.startActivity(intent)
@@ -241,7 +257,7 @@ fun ArchiveScreen(
                 showOnlyAlertAndSetting = useBottomMenu
             )
 
-            // 笔记列表区域
+            //笔记列表
             Box(
                 modifier = Modifier
                     .fillMaxWidth()
@@ -253,20 +269,20 @@ fun ArchiveScreen(
                     isSelectionMode = isSelectionMode,
                     onNoteClick = { noteId ->
                         if (isSelectionMode) {
-                            // 在选择模式下，点击切换选中状态
+
                             if (selectedNoteIds.contains(noteId)) {
                                 selectedNoteIds.remove(noteId)
                             } else {
                                 selectedNoteIds.add(noteId)
                             }
                         } else {
-                            // 普通模式下，打开笔记详情
+
                             val intent = NoteDetailActivity.newIntent(context, noteId)
                             context.startActivity(intent)
                         }
                     },
                     onNoteLongPress = { noteId ->
-                        // 长按进入选择模式
+                        //长按选择
                         if (!selectedNoteIds.contains(noteId)) {
                             selectedNoteIds.add(noteId)
                         }
@@ -274,25 +290,24 @@ fun ArchiveScreen(
                 )
             }
 
-            // 如果使用底部菜单，则显示底部导航
             if (useBottomMenu) {
                 BottomNavMenu(
                     selectedItem = selectedItem,
                     onItemSelected = { itemId ->
                         selectedItem = itemId
                         when (itemId) {
-                            1 -> { // Keep/主界面
+                            1 -> {//主
                                 val intent = Intent(context, MainActivity::class.java)
                                 context.startActivity(intent)
-                                onBackClick() // 关闭当前页面
+                                onBackClick()
                             }
-                            3 -> { // Archive/归档 - 当前页面，不跳转
+                            3 -> {//归档
                                 selectedItem = 3
                             }
-                            4 -> { // Trash/回收站
+                            4 -> {//垃圾.
                                 val intent = Intent(context, TrashActivity::class.java)
                                 context.startActivity(intent)
-                                onBackClick() // 关闭当前页面
+                                onBackClick()
                             }
                         }
                     }
@@ -301,7 +316,7 @@ fun ArchiveScreen(
         }
     }
 
-    // 删除确认对话框
+    //删除确认
     if (showDeleteDialog) {
         AlertDialog(
             onDismissRequest = { showDeleteDialog = false },
@@ -329,7 +344,7 @@ fun ArchiveScreen(
         )
     }
 
-    // 取消归档确认对话框
+    //归档取消确认
     if (showUnarchiveDialog) {
         AlertDialog(
             onDismissRequest = { showUnarchiveDialog = false },
@@ -357,7 +372,7 @@ fun ArchiveScreen(
         )
     }
 
-    // 🔴 新增：分享选项对话框
+    //分享选项
     if (showShareOptionsDialog && notesToShare.isNotEmpty()) {
         AlertDialog(
             onDismissRequest = {
@@ -368,11 +383,10 @@ fun ArchiveScreen(
             text = {
                 Column {
                     Text("请选择要分享的内容：")
+
                     Spacer(modifier = Modifier.height(16.dp))
 
-                    // 分享选项列表
                     LazyColumn {
-                        // 1. 仅分享文本
                         item {
                             ShareOptionItem(
                                 icon = Icons.Default.TextFields,
@@ -381,7 +395,7 @@ fun ArchiveScreen(
                                 onClick = {
                                     showShareOptionsDialog = false
                                     if (notesToShare.size == 1) {
-                                        // 单条笔记
+                                        //单条笔记
                                         NoteShareHelper.shareNote(
                                             context = context,
                                             note = notesToShare.first(),
@@ -390,7 +404,7 @@ fun ArchiveScreen(
                                             chooserTitle = "分享归档笔记: ${notesToShare.first().title}"
                                         )
                                     } else {
-                                        // 多条笔记，分享合并的文本
+                                        //多条笔记
                                         shareMultipleNotes(context, notesToShare, "归档笔记")
                                     }
                                     notesToShare = emptyList()
@@ -398,7 +412,7 @@ fun ArchiveScreen(
                             )
                         }
 
-                        // 2. 仅分享图片（如果有图片）
+                        //仅图片
                         if (selectedNotesImageUris.isNotEmpty()) {
                             item {
                                 ShareOptionItem(
@@ -408,7 +422,6 @@ fun ArchiveScreen(
                                     onClick = {
                                         showShareOptionsDialog = false
                                         if (notesToShare.size == 1) {
-                                            // 单条笔记
                                             NoteShareHelper.shareNote(
                                                 context = context,
                                                 note = notesToShare.first(),
@@ -417,7 +430,6 @@ fun ArchiveScreen(
                                                 chooserTitle = "分享图片: ${notesToShare.first().title}"
                                             )
                                         } else {
-                                            // 多条笔记的图片分享
                                             shareMultipleNotesImages(context, notesToShare, selectedNotesImageUris)
                                         }
                                         notesToShare = emptyList()
@@ -426,7 +438,7 @@ fun ArchiveScreen(
                             }
                         }
 
-                        // 3. 分享全部
+                        //分享全部
                         item {
                             ShareOptionItem(
                                 icon = Icons.Default.Share,
@@ -444,7 +456,6 @@ fun ArchiveScreen(
                                             chooserTitle = "分享归档笔记: ${notesToShare.first().title}"
                                         )
                                     } else {
-                                        // 多条笔记的全部内容分享
                                         shareMultipleNotesAll(context, notesToShare, selectedNotesImageUris)
                                     }
                                     notesToShare = emptyList()
@@ -469,9 +480,7 @@ fun ArchiveScreen(
     }
 }
 
-/**
- * 归档页面顶部工具栏（普通模式）
- */
+
 @Composable
 fun ArchiveTopBar(
     onMenuClick: () -> Unit,
@@ -485,7 +494,7 @@ fun ArchiveTopBar(
             .height(56.dp),
         verticalAlignment = Alignment.CenterVertically
     ) {
-        // 菜单按钮（替换原来的返回按钮）
+        //菜单按钮
         IconButton(onClick = onMenuClick) {
             Icon(
                 painter = painterResource(R.drawable.baseline_menu_24),
@@ -493,7 +502,7 @@ fun ArchiveTopBar(
             )
         }
 
-        // 标题和归档数量
+        //统计数量
         Column(
             modifier = Modifier
                 .weight(1f)
@@ -513,9 +522,6 @@ fun ArchiveTopBar(
     }
 }
 
-/**
- * 归档页面选择模式顶部工具栏
- */
 @Composable
 fun SelectionTopBar(
     selectedCount: Int,
@@ -533,7 +539,6 @@ fun SelectionTopBar(
             .padding(horizontal = 8.dp),
         verticalAlignment = Alignment.CenterVertically
     ) {
-        // 返回/取消选择按钮
         IconButton(
             onClick = onCancelSelection,
             modifier = Modifier.size(48.dp)
@@ -545,7 +550,6 @@ fun SelectionTopBar(
             )
         }
 
-        // 选中数量
         Text(
             text = "已选中 $selectedCount 项",
             color = MaterialTheme.colorScheme.onPrimary,
@@ -556,7 +560,6 @@ fun SelectionTopBar(
                 .padding(start = 8.dp)
         )
 
-        // 删除按钮
         IconButton(
             onClick = onDeleteClick,
             modifier = Modifier.size(48.dp)
@@ -568,7 +571,6 @@ fun SelectionTopBar(
             )
         }
 
-        // 分享按钮
         IconButton(
             onClick = onShareClick,
             modifier = Modifier.size(48.dp)
@@ -580,7 +582,6 @@ fun SelectionTopBar(
             )
         }
 
-        // 取消归档按钮
         IconButton(
             onClick = onUnarchiveClick,
             modifier = Modifier.size(48.dp)
@@ -694,9 +695,7 @@ fun ShareOptionItem(
     }
 }
 
-/**
- * 🔴 新增：分享多条笔记的文本
- */
+
 private fun shareMultipleNotes(context: android.content.Context, notes: List<Note>, noteType: String = "笔记") {
     if (notes.isEmpty()) {
         Toast.makeText(context, "没有可分享的$noteType", Toast.LENGTH_SHORT).show()
@@ -728,9 +727,7 @@ private fun shareMultipleNotes(context: android.content.Context, notes: List<Not
     context.startActivity(Intent.createChooser(shareIntent, "分享$noteType"))
 }
 
-/**
- * 🔴 新增：分享多条笔记的图片
- */
+
 private fun shareMultipleNotesImages(context: android.content.Context, notes: List<Note>, imageUris: List<android.net.Uri>) {
     if (imageUris.isEmpty()) {
         Toast.makeText(context, "没有可分享的图片", Toast.LENGTH_SHORT).show()
@@ -738,7 +735,6 @@ private fun shareMultipleNotesImages(context: android.content.Context, notes: Li
     }
 
     val shareIntent = if (imageUris.size == 1) {
-        // 单张图片
         Intent().apply {
             action = Intent.ACTION_SEND
             type = "image/*"
@@ -746,7 +742,6 @@ private fun shareMultipleNotesImages(context: android.content.Context, notes: Li
             addFlags(Intent.FLAG_GRANT_READ_URI_PERMISSION)
         }
     } else {
-        // 多张图片
         Intent().apply {
             action = Intent.ACTION_SEND_MULTIPLE
             type = "image/*"
@@ -758,16 +753,14 @@ private fun shareMultipleNotesImages(context: android.content.Context, notes: Li
     context.startActivity(Intent.createChooser(shareIntent, "分享图片"))
 }
 
-/**
- * 🔴 新增：分享多条笔记的全部内容（文本+图片）
- */
+//多条笔记分享
 private fun shareMultipleNotesAll(context: android.content.Context, notes: List<Note>, imageUris: List<android.net.Uri>) {
     if (notes.isEmpty()) {
         Toast.makeText(context, "没有可分享的笔记", Toast.LENGTH_SHORT).show()
         return
     }
 
-    // 构建文本内容
+    //文本内容
     val builder = StringBuilder()
     if (notes.size == 1) {
         builder.append(NoteShareHelper.buildShareText(notes.first()))
@@ -784,7 +777,7 @@ private fun shareMultipleNotesAll(context: android.content.Context, notes: List<
     val shareText = builder.toString().trim()
 
     val shareIntent = if (imageUris.isEmpty()) {
-        // 没有图片，只分享文本
+        //仅文本
         Intent().apply {
             action = Intent.ACTION_SEND
             type = "text/plain"
@@ -792,7 +785,7 @@ private fun shareMultipleNotesAll(context: android.content.Context, notes: List<
             putExtra(Intent.EXTRA_SUBJECT, "分享归档笔记")
         }
     } else if (imageUris.size == 1) {
-        // 单张图片 + 文本
+        //图+文
         Intent().apply {
             action = Intent.ACTION_SEND
             type = "image/*"
@@ -802,7 +795,7 @@ private fun shareMultipleNotesAll(context: android.content.Context, notes: List<
             addFlags(Intent.FLAG_GRANT_READ_URI_PERMISSION)
         }
     } else {
-        // 多张图片 + 文本
+        //多图+文
         Intent().apply {
             action = Intent.ACTION_SEND_MULTIPLE
             type = "image/*"

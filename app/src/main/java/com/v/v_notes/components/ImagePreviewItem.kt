@@ -1,6 +1,5 @@
 package com.v.v_notes.components
 
-import android.widget.Toast
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.fillMaxSize
@@ -31,8 +30,6 @@ fun ImagePreviewItem(
     modifier: Modifier = Modifier
 ) {
 
-    val context = LocalContext.current
-
     Card(
         shape = RoundedCornerShape(8.dp),
         elevation = CardDefaults.cardElevation(defaultElevation = 2.dp),
@@ -44,13 +41,13 @@ fun ImagePreviewItem(
                 .data(imageUri)
                 .crossfade(true)
                 .build(),
-            contentDescription = "笔记图片",
+            contentDescription = null,
             contentScale = ContentScale.Crop,
             modifier = Modifier.fillMaxSize()
         ) {
             when (painter.state) {
                 is AsyncImagePainter.State.Loading -> {
-                    // 加载中显示进度条
+                    //进度条
                     Box(
                         modifier = Modifier.fillMaxSize(),
                         contentAlignment = Alignment.Center
@@ -62,7 +59,6 @@ fun ImagePreviewItem(
                     }
                 }
                 is AsyncImagePainter.State.Error -> {
-                    // 加载失败显示占位符
                     Box(
                         modifier = Modifier
                             .fillMaxSize()
@@ -71,14 +67,13 @@ fun ImagePreviewItem(
                     ) {
                         Icon(
                             imageVector = Icons.Default.Image,
-                            contentDescription = "加载失败",
+                            contentDescription = null,
                             tint = MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.5f),
                             modifier = Modifier.size(36.dp)
                         )
                     }
                 }
                 else -> {
-                    // 加载成功显示图片
                     SubcomposeAsyncImageContent()
                 }
             }

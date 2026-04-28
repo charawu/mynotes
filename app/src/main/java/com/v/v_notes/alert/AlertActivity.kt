@@ -33,7 +33,7 @@ class AlertActivity : ComponentActivity(){
 
 @Composable
 fun AlertActivityScreen(){
-
+//TODO
 }
 
 @Preview(showBackground = true)

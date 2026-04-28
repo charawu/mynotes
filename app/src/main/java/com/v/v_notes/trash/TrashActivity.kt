@@ -6,7 +6,6 @@ import androidx.activity.compose.setContent
 import androidx.compose.animation.Crossfade
 import androidx.compose.animation.core.tween
 import androidx.compose.foundation.background
-import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
 import androidx.compose.material.icons.Icons
@@ -14,8 +13,6 @@ import androidx.compose.material.icons.filled.ArrowBack
 import androidx.compose.material.icons.filled.Close
 import androidx.compose.material.icons.filled.DeleteForever
 import androidx.compose.material.icons.filled.RestoreFromTrash
-import androidx.compose.material3.*
-import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
@@ -23,8 +20,6 @@ import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
-import androidx.lifecycle.viewmodel.compose.viewModel
-import android.app.Application
 import androidx.compose.material3.TextButton
 import com.v.v_notes.components.NoteListItem
 import com.v.v_notes.data.database.NoteDatabase
@@ -34,13 +29,31 @@ import kotlinx.coroutines.launch
 import androidx.compose.runtime.getValue
 import com.v.v_notes.NoteDetailActivity
 import com.v.v_notes.data.model.Note
-import com.v.v_notes.viewmodel.NoteViewModel
-import com.v.v_notes.factory.NoteViewModelFactory
 import android.widget.Toast
 import androidx.activity.enableEdgeToEdge
+import androidx.compose.foundation.layout.Arrangement
+import androidx.compose.foundation.layout.Box
+import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.layout.Row
+import androidx.compose.foundation.layout.fillMaxSize
+import androidx.compose.foundation.layout.fillMaxWidth
+import androidx.compose.foundation.layout.height
+import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.layout.size
+import androidx.compose.foundation.layout.statusBarsPadding
+import androidx.compose.material3.AlertDialog
 import androidx.compose.material3.Icon
+import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Surface
+import androidx.compose.material3.Text
+import androidx.compose.runtime.Composable
+import androidx.compose.runtime.collectAsState
+import androidx.compose.runtime.mutableStateListOf
+import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.remember
+import androidx.compose.runtime.rememberCoroutineScope
+import androidx.compose.runtime.setValue
 import androidx.compose.ui.res.painterResource
 import com.v.v_notes.R
 
@@ -71,28 +84,20 @@ fun TrashScreen(
     val context = LocalContext.current
     val coroutineScope = rememberCoroutineScope()
 
-    // 选中的笔记ID列表
     val selectedNoteIds = remember { mutableStateListOf<String>() }
     val isSelectionMode = selectedNoteIds.isNotEmpty()
 
-    // 控制对话框
     var showRestoreDialog by remember { mutableStateOf(false) }
     var showPermanentDeleteDialog by remember { mutableStateOf(false) }
 
-    // 获取数据库实例
+    //获取数据
     val database = remember { NoteDatabase.getInstance(context) }
 
-    // 查询已删除的笔记
+    //查询已删除的笔记
     val deletedNotesFlow = database.noteDao().getAllDeletedNotes()
     val deletedNotes by deletedNotesFlow.collectAsState(initial = emptyList())
 
-    val noteViewModel: NoteViewModel = viewModel(
-        factory = NoteViewModelFactory(
-            application = LocalContext.current.applicationContext as Application
-        )
-    )
-
-    // 恢复选中的笔记
+    //恢复
     val restoreSelectedNotes = {
         selectedNoteIds.forEach { noteId ->
             coroutineScope.launch(Dispatchers.IO) {
@@ -106,11 +111,10 @@ fun TrashScreen(
         selectedNoteIds.clear()
     }
 
-    // 永久删除选中的笔记
+    //永久删除
     val permanentlyDeleteSelectedNotes = {
         selectedNoteIds.forEach { noteId ->
             coroutineScope.launch(Dispatchers.IO) {
-                // 先获取笔记，然后删除
                 val note = database.noteDao().getNoteById(noteId)
                 note?.let {
                     database.noteDao().deleteNote(it)
@@ -132,7 +136,6 @@ fun TrashScreen(
         Column(
             modifier = Modifier.fillMaxSize()
         ) {
-            // 顶部工具栏
             Crossfade(
                 targetState = isSelectionMode,
                 animationSpec = tween(300)
@@ -152,7 +155,6 @@ fun TrashScreen(
                 }
             }
 
-            // 笔记列表区域
             Box(
                 modifier = Modifier
                     .fillMaxWidth()
@@ -164,20 +166,17 @@ fun TrashScreen(
                     isSelectionMode = isSelectionMode,
                     onNoteClick = { noteId ->
                         if (isSelectionMode) {
-                            // 在选择模式下，点击切换选中状态
                             if (selectedNoteIds.contains(noteId)) {
                                 selectedNoteIds.remove(noteId)
                             } else {
                                 selectedNoteIds.add(noteId)
                             }
                         } else {
-                            // 普通模式下，打开笔记详情
                             val intent = NoteDetailActivity.newIntent(context, noteId)
                             context.startActivity(intent)
                         }
                     },
                     onNoteLongPress = { noteId ->
-                        // 长按进入选择模式
                         if (!selectedNoteIds.contains(noteId)) {
                             selectedNoteIds.add(noteId)
                         }
@@ -187,7 +186,7 @@ fun TrashScreen(
         }
     }
 
-    // 恢复确认对话框
+    //恢复确认对话
     if (showRestoreDialog) {
         AlertDialog(
             onDismissRequest = { showRestoreDialog = false },
@@ -215,7 +214,7 @@ fun TrashScreen(
         )
     }
 
-    // 永久删除确认对话框
+    //永久删除对话
     if (showPermanentDeleteDialog) {
         AlertDialog(
             onDismissRequest = { showPermanentDeleteDialog = false },
@@ -244,9 +243,7 @@ fun TrashScreen(
     }
 }
 
-/**
- * 回收站页面顶部工具栏（普通模式）
- */
+
 @Composable
 fun TrashTopBar(
     onBackClick: () -> Unit,
@@ -260,7 +257,6 @@ fun TrashTopBar(
             .height(56.dp),
         verticalAlignment = Alignment.CenterVertically
     ) {
-        // 返回按钮
         IconButton(onClick = onBackClick) {
             Icon(
                 imageVector = Icons.Default.ArrowBack,
@@ -268,7 +264,7 @@ fun TrashTopBar(
             )
         }
 
-        // 标题和回收站数量
+        //统计
         Column(
             modifier = Modifier
                 .weight(1f)
@@ -288,9 +284,6 @@ fun TrashTopBar(
     }
 }
 
-/**
- * 回收站页面选择模式顶部工具栏
- */
 @Composable
 fun TrashSelectionTopBar(
     selectedCount: Int,
@@ -307,7 +300,6 @@ fun TrashSelectionTopBar(
             .padding(horizontal = 8.dp),
         verticalAlignment = Alignment.CenterVertically
     ) {
-        // 返回/取消选择按钮
         IconButton(
             onClick = onCancelSelection,
             modifier = Modifier.size(48.dp)
@@ -319,7 +311,6 @@ fun TrashSelectionTopBar(
             )
         }
 
-        // 选中数量
         Text(
             text = "已选中 $selectedCount 项",
             color = MaterialTheme.colorScheme.onErrorContainer,
@@ -330,7 +321,7 @@ fun TrashSelectionTopBar(
                 .padding(start = 8.dp)
         )
 
-        // 永久删除按钮
+        //永久删除按钮
         IconButton(
             onClick = onPermanentDeleteClick,
             modifier = Modifier.size(48.dp)
@@ -342,7 +333,7 @@ fun TrashSelectionTopBar(
             )
         }
 
-        // 恢复按钮
+        //恢复按钮
         IconButton(
             onClick = onRestoreClick,
             modifier = Modifier.size(48.dp)

@@ -23,19 +23,10 @@ import androidx.compose.ui.unit.dp
 import com.v.v_notes.R
 import com.v.v_notes.ui.theme.MyNotesTheme
 
-/**
- * 简单的开关列表项组件
- * @param modifier 修饰符
- * @param leadingIcon 左侧图标
- * @param title 标题文本
- * @param subtitle 副标题文本，可选
- * @param checked 开关的当前状态
- * @param onCheckedChange 开关状态改变时的回调
- * @param thumbIconChecked 开关打开时的拇指图标
- * @param thumbIconUnchecked 开关关闭时的拇指图标
- */
+
 @Composable
 fun SwitchListItem(
+    enable: Boolean = true,
     isReboot: Boolean = false,
     modifier: Modifier = Modifier,
     leadingIcon: Painter,
@@ -49,20 +40,19 @@ fun SwitchListItem(
     Card(
         modifier = modifier
             .fillMaxWidth()
-            .padding(horizontal = 5.dp, vertical = 3.dp)
+            .padding(5.dp,3.dp)
     ) {
         Row(
             modifier = Modifier
                 .fillMaxWidth()
-                .padding(vertical = 8.dp, horizontal = 12.dp),
+                .padding(8.dp,12.dp),
             verticalAlignment = Alignment.CenterVertically,
             horizontalArrangement = Arrangement.SpaceBetween
         ) {
-            // 左侧内容区域
+            //内容区域
             Row(
                 verticalAlignment = Alignment.CenterVertically
             ) {
-                // 左侧图标
                 Icon(
                     painter = leadingIcon,
                     contentDescription = null,
@@ -71,7 +61,6 @@ fun SwitchListItem(
                         .size(24.dp)
                 )
 
-                // 文本区域
                 Column {
                     Text(
                         style = MaterialTheme.typography.titleMedium,
@@ -92,8 +81,8 @@ fun SwitchListItem(
                 }
             }
 
-            // 开关
             Switch(
+                enabled = enable,
                 checked = checked,
                 onCheckedChange = onCheckedChange,
                 thumbContent = if (checked) {
@@ -127,15 +116,15 @@ fun SwitchListItemPreview() {
         ) {
             SwitchListItem(
                 leadingIcon = painterResource(R.drawable.outline_horizontal_split_24),
-                title = "固定菜单栏",
-                subtitle = "始终显示侧边菜单",
+                title = "1",
+                subtitle = "2",
                 checked = true,
                 onCheckedChange = {}
             )
 
             SwitchListItem(
                 leadingIcon = painterResource(R.drawable.baseline_arrow_back_24),
-                title = "深色模式",
+                title = "1",
                 checked = false,
                 onCheckedChange = {}
             )

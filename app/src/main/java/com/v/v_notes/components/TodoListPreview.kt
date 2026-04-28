@@ -33,7 +33,7 @@ fun TodoListPreview(
     val totalCount = todoItems.size
 
     Column(modifier = modifier) {
-        // 进度信息
+        //进度
         Row(
             modifier = Modifier.fillMaxWidth(),
             horizontalArrangement = Arrangement.SpaceBetween,
@@ -54,7 +54,6 @@ fun TodoListPreview(
 
         Spacer(modifier = Modifier.height(12.dp))
 
-        // 进度条
         if (totalCount > 0) {
             val progress = if (totalCount > 0) completedCount.toFloat() / totalCount else 0f
             LinearProgressIndicator(
@@ -69,7 +68,7 @@ fun TodoListPreview(
 
         Spacer(modifier = Modifier.height(16.dp))
 
-        // 待办事项列表
+        //待办列表
         todoItems.forEachIndexed { index, todoItem ->
             Row(
                 modifier = Modifier

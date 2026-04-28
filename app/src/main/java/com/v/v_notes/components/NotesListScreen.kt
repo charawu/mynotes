@@ -4,14 +4,11 @@ import android.net.Uri
 import android.text.Html
 import android.util.Log
 import androidx.compose.foundation.background
-import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.lazy.LazyRow
 import androidx.compose.foundation.lazy.items
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Close
 import androidx.compose.material.icons.filled.Error
-import androidx.compose.material3.*
-import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
@@ -35,56 +32,101 @@ import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
 import java.io.File
-
-//import kotlinx.coroutines.rememberCoroutineScope
-
-/**
- * 笔记详情屏幕组件
- * 从数据库读取笔记并使用RichTextEditor显示HTML内容
- * 注意：数据库的getNoteById方法参数是String类型
- */
+import androidx.compose.runtime.key
+import coil.compose.AsyncImage
+import androidx.compose.foundation.clickable
+import androidx.compose.foundation.layout.Arrangement
+import androidx.compose.foundation.layout.Box
+import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.layout.Row
+import androidx.compose.foundation.layout.Spacer
+import androidx.compose.foundation.layout.fillMaxSize
+import androidx.compose.foundation.layout.fillMaxWidth
+import androidx.compose.foundation.layout.height
+import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.layout.size
+import androidx.compose.foundation.shape.RoundedCornerShape
+import androidx.compose.material3.Button
+import androidx.compose.material3.Card
+import androidx.compose.material3.CardDefaults
+import androidx.compose.material3.CircularProgressIndicator
+import androidx.compose.material3.Icon
+import androidx.compose.material3.IconButton
+import androidx.compose.material3.MaterialTheme
+import androidx.compose.material3.Surface
+import androidx.compose.material3.Text
+import androidx.compose.runtime.Composable
+import androidx.compose.runtime.LaunchedEffect
+import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableIntStateOf
+import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.remember
+import androidx.compose.runtime.rememberCoroutineScope
+import androidx.compose.runtime.setValue
+import androidx.compose.ui.draw.clip
+import androidx.compose.ui.layout.ContentScale
 
 @Composable
 fun ImagePreviewGrid(
     imageUris: List<String>,
     onImageClick: (Int) -> Unit = {},
-    modifier: Modifier = Modifier
+    modifier: Modifier = Modifier,
+    refreshKey: Int = 0,
+    onImageEditSuccess: (() -> Unit)? = null
 ) {
-    // 状态变量控制预览对话框的显示
     var showPreviewDialog by remember { mutableStateOf(false) }
-    // 当前选中的图片索引
     var selectedImageIndex by remember { mutableIntStateOf(-1) }
 
-    // 添加调试日志
-    LaunchedEffect(imageUris) {
-        Log.d("ImagePreviewGrid", "图片列表大小: ${imageUris.size}")
-        imageUris.forEachIndexed { index, uri ->
-            Log.d("ImagePreviewGrid", "图片[$index]: $uri")
+    key(refreshKey) {
+        // 添加调试日志
+        LaunchedEffect(imageUris, refreshKey) {
+            Log.d("ImagePreviewGrid", "图片列表大小: ${imageUris.size}, 刷新key: $refreshKey")
+            imageUris.forEachIndexed { index, uri ->
+                Log.d("ImagePreviewGrid", "图片[$index]: $uri")
+            }
         }
-    }
 
-    LazyRow(
-        horizontalArrangement = Arrangement.spacedBy(8.dp),
-        modifier = modifier
-    ) {
-        items(imageUris) { uri ->
-            ImagePreviewItem(
-                imageUri = uri,
-                onClick = {
-                    val index = imageUris.indexOf(uri)
-                    Log.d("ImagePreviewGrid", "点击图片，索引: $index")
-                    // 设置选中的图片索引
-                    selectedImageIndex = index
-                    // 显示预览对话框
-                    showPreviewDialog = true
-                    // 调用外部回调（可选）
-                    onImageClick(index)
+        LazyRow(
+            horizontalArrangement = Arrangement.spacedBy(8.dp),
+            modifier = modifier
+        ) {
+            items(imageUris, key = { uri ->
+
+                "${uri}_${refreshKey}_${imageUris.indexOf(uri)}"
+            }) { uri ->
+                val index = imageUris.indexOf(uri)
+                //图片预览
+                Box(
+                    modifier = Modifier
+                        .size(100.dp)
+                        .clip(RoundedCornerShape(8.dp))
+                        .clickable {
+                            Log.d("ImagePreviewGrid", "点击图片，索引: $index")
+                            selectedImageIndex = index
+                            showPreviewDialog = true
+                            onImageClick(index)
+                        }
+                ) {
+                    key("image_preview_${uri}_${refreshKey}_$index") {
+                        // 添加时间戳参数强制重新加载
+                        val uriWithTimestamp = if (uri.contains("?")) {
+                            "$uri&t=$refreshKey"
+                        } else {
+                            "$uri?t=$refreshKey"
+                        }
+
+                        AsyncImage(
+                            model = uriWithTimestamp,
+                            contentDescription = "图片预览",
+                            modifier = Modifier.fillMaxSize(),
+                            contentScale = ContentScale.Crop
+                        )
+                    }
                 }
-            )
+            }
         }
     }
 
-    // 图片预览对话框
     if (showPreviewDialog && selectedImageIndex >= 0 && selectedImageIndex < imageUris.size) {
         val selectedUri = imageUris[selectedImageIndex]
         Log.d("ImagePreviewGrid", "显示预览对话框，URI: $selectedUri")
@@ -93,16 +135,22 @@ fun ImagePreviewGrid(
             onDismiss = {
                 showPreviewDialog = false
                 selectedImageIndex = -1
+            },
+            refreshKey = refreshKey,
+            onSaveSuccess = { savedFile ->
+                onImageEditSuccess?.invoke()
             }
         )
     }
 }
 
-// 图片预览对话框组件
+//图片预览对话框
 @Composable
 fun ImagePreviewDialog(
     imageUri: String,
-    onDismiss: () -> Unit
+    onDismiss: () -> Unit,
+    refreshKey: Int = 0,
+    onSaveSuccess: (File) -> Unit = {}
 ) {
     val context = LocalContext.current
     val coroutineScope = rememberCoroutineScope()
@@ -110,20 +158,17 @@ fun ImagePreviewDialog(
     var isLoading by remember { mutableStateOf(false) }
     var errorMessage by remember { mutableStateOf<String?>(null) }
 
-    LaunchedEffect(imageUri) {
+    LaunchedEffect(imageUri, refreshKey) {
         isLoading = true
         errorMessage = null
 
         try {
-            Log.d("ImagePreviewDialog", "开始加载图片，原始URI: $imageUri")
+            Log.d("ImagePreviewDialog", "开始加载图片，原始URI: $imageUri, 刷新key: $refreshKey")
 
-            // 处理可能的方括号问题
             val processedUri = cleanImageUri(imageUri)
             Log.d("ImagePreviewDialog", "处理后的URI: $processedUri")
 
-            // 判断图片URI类型并处理
             actualImagePath = when {
-                // 如果是 content:// 或 file:// URI
                 processedUri.startsWith("content://") || processedUri.startsWith("file://") -> {
                     Log.d("ImagePreviewDialog", "检测为Uri，尝试解析")
                     try {
@@ -133,31 +178,29 @@ fun ImagePreviewDialog(
                         null
                     }
                 }
-                // 如果是本地文件路径
                 processedUri.startsWith("/") -> {
                     Log.d("ImagePreviewDialog", "检测为本地文件路径")
                     processedUri
                 }
-                // 其他情况，尝试作为本地文件路径
                 else -> {
                     Log.d("ImagePreviewDialog", "未知格式，尝试作为文件路径处理")
                     processedUri
                 }
             }
 
-             //检查文件是否存在（如果是本地路径）
-            if (actualImagePath is String) {
-                val file = File(actualImagePath as String)
-                Log.d("ImagePreviewDialog", "文件路径: ${file.absolutePath}")
-                Log.d("ImagePreviewDialog", "文件存在: ${file.exists()}")
-                if (!file.exists()) {
-                    errorMessage = "文件不存在: ${file.absolutePath}"
-                }
-            } else if (actualImagePath is Uri) {
-                Log.d("ImagePreviewDialog", "Uri路径: $actualImagePath")
-            } else {
-                Log.d("ImagePreviewDialog", "actualImagePath 为 null")
-            }
+            // 检查文件是否存在（如果是本地路径）
+//            if (actualImagePath is String) {
+//                val file = File(actualImagePath as String)
+//                Log.d("ImagePreviewDialog", "文件路径: ${file.absolutePath}")
+//                Log.d("ImagePreviewDialog", "文件存在: ${file.exists()}")
+//                if (!file.exists()) {
+//                    errorMessage = "文件不存在: ${file.absolutePath}"
+//                }
+//            } else if (actualImagePath is Uri) {
+//                Log.d("ImagePreviewDialog", "Uri路径: $actualImagePath")
+//            } else {
+//                Log.d("ImagePreviewDialog", "actualImagePath 为 null")
+//            }
 
         } catch (e: Exception) {
             errorMessage = "处理图片时出错: ${e.message}"
@@ -222,42 +265,47 @@ fun ImagePreviewDialog(
                         }
                     }
                 } else if (actualImagePath != null) {
-                    PhotoViewerEditor(
-                        imageLocalPath = actualImagePath!!,
-                        initialMode = ViewMode.VIEW,
-                        onModeChange = { //TODO模式
+                    key("photo_viewer_${refreshKey}") {
+                        PhotoViewerEditor(
+                            imageLocalPath = actualImagePath!!,
+                            initialMode = ViewMode.VIEW,
+                            onModeChange = { /* TODO: 处理模式切换 */ },
+                            onSaveSuccess = { savedFile ->
+                                coroutineScope.launch {
+                                    withContext(Dispatchers.Main) {
+                                        Toast.makeText(
+                                            context,
+                                            "图片已保存",
+                                            Toast.LENGTH_SHORT
+                                        ).show()
+
+                                        onSaveSuccess(savedFile)
+
+                                        onDismiss()
+                                    }
+                                }
                             },
-                        onSaveSuccess = { savedFile ->
-                            coroutineScope.launch {
-                                withContext(Dispatchers.Main) {
-                                    Toast.makeText(
-                                        context,
-                                        "图片已保存",
-                                        Toast.LENGTH_SHORT
-                                    ).show()
+                            onError = { error ->
+                                coroutineScope.launch {
+                                    withContext(Dispatchers.Main) {
+                                        val errorMsg = "加载图片失败: ${error.message}"
+                                        Toast.makeText(
+                                            context,
+                                            errorMsg,
+                                            Toast.LENGTH_LONG
+                                        ).show()
+                                    }
                                 }
                             }
-                        },
-                        onError = { error ->
-                            coroutineScope.launch {
-                                withContext(Dispatchers.Main) {
-                                    val errorMsg = "加载图片失败: ${error.message}"
-                                    Toast.makeText(
-                                        context,
-                                        errorMsg,
-                                        Toast.LENGTH_LONG
-                                    ).show()
-                                }
-                            }
-                        }
-                    )
+                        )
+                    }
 
                     //关闭按钮
                     IconButton(
                         onClick = onDismiss,
                         modifier = Modifier
                             .align(Alignment.TopStart)
-                            .padding(16.dp,32.dp,16.dp,16.dp)
+                            .padding(16.dp, 32.dp, 16.dp, 16.dp)
                             .size(48.dp)
                     ) {
                         Icon(
@@ -267,7 +315,7 @@ fun ImagePreviewDialog(
                         )
                     }
                 } else {
-                    //没有图片路径
+                    //没有图片
                     Box(
                         modifier = Modifier.fillMaxSize(),
                         contentAlignment = Alignment.Center
@@ -369,18 +417,16 @@ private fun getPlainTextLengthFromHtml(html: String): Int {
         //清理空白字符
         val cleanedText = plainText
             .replace(Regex("\\s+"), " ")
-            .trim()                       // 去除首尾空白
+            .trim()
 
         cleanedText.length
     } catch (e: Exception) {
-        // 如果出错，回退到简单的方法
         html.replace(Regex("<[^>]*>"), "")
             .replace(Regex("\\s+"), " ")
             .trim()
             .length
     }
 }
-
 
 @Preview(showBackground = true)
 @Composable
@@ -446,7 +492,8 @@ fun ImagePreviewGridPreview() {
                     ),
                     onImageClick = { index ->
                         println("点击了第${index + 1}张图片")
-                    }
+                    },
+                    refreshKey = 0
                 )
             }
         }

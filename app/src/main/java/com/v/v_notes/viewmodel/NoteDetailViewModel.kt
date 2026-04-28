@@ -4,7 +4,6 @@ import android.app.Application
 import androidx.lifecycle.AndroidViewModel
 import androidx.lifecycle.viewModelScope
 import com.v.v_notes.data.model.Note
-import com.v.v_notes.data.model.TodoItem
 import com.v.v_notes.data.repository.NoteRepository
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
@@ -33,16 +32,16 @@ class NoteDetailViewModel(
         }
     }
 
-    // 更新待办事项状态
+    //更新待办事项状态
     fun updateTodoItemStatus(todoItemId: String, isCompleted: Boolean) {
         val currentNote = _note.value ?: return
 
         viewModelScope.launch {
             try {
-                // 更新数据库
+                //更新数据库
                 noteRepository.updateTodoItemStatus(currentNote.id, todoItemId, isCompleted)
 
-                // 更新本地状态
+                //更新本地状态
                 updateLocalTodoItemStatus(todoItemId, isCompleted)
             } catch (e: Exception) {
                 e.printStackTrace()
@@ -50,7 +49,7 @@ class NoteDetailViewModel(
         }
     }
 
-    // 更新本地状态
+    //更新本地状态
     private fun updateLocalTodoItemStatus(todoItemId: String, isCompleted: Boolean) {
         val currentNote = _note.value ?: return
 

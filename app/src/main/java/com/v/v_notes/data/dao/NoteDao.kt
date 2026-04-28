@@ -15,15 +15,15 @@ interface NoteDao {
     @Query("SELECT * FROM notes WHERE isDeleted = 0 AND isArchived = 0 ORDER BY isPinned DESC, updatedAt DESC")
     fun getAllNotes(): Flow<List<Note>>
 
-    // 新增：获取所有已归档且未删除的笔记
+    //获取所有已归档且未删除的笔记
     @Query("SELECT * FROM notes WHERE isArchived = 1 AND isDeleted = 0 ORDER BY updatedAt DESC")
     fun getAllArchivedNotes(): Flow<List<Note>>
 
-    // 新增：获取所有已删除的笔记（回收站）
+    //获取所有已删除的笔记（回收站）
     @Query("SELECT * FROM notes WHERE isDeleted = 1 ORDER BY updatedAt DESC")
     fun getAllDeletedNotes(): Flow<List<Note>>
 
-    // 新增：获取所有置顶的笔记（且未删除）
+    //获取所有置顶的笔记（且未删除）
     @Query("SELECT * FROM notes WHERE isPinned = 1 AND isDeleted = 0 ORDER BY updatedAt DESC")
     fun getAllPinnedNotes(): Flow<List<Note>>
 
@@ -78,14 +78,18 @@ interface NoteDao {
     @Query("DELETE FROM notes")
     suspend fun deleteAllNotes()
 
-    // ============ 新增的待办事项相关方法 ============
 
-    // 新增：更新笔记中的待办事项列表
+    // 更新笔记中的待办事项列表
     @Query("UPDATE notes SET todoItems = :todoItems WHERE id = :noteId")
     suspend fun updateNoteTodoItems(noteId: String, todoItems: String)
 
-    // 新增：更新单个待办事项的完成状态
-    // 这个方法会获取整个笔记，更新特定的待办事项，然后保存回去
+
+    //TODO
+    // 添加：根据更新时间查询笔记
+    @Query("SELECT * FROM notes WHERE updatedAt > :lastSyncTime")
+    suspend fun getNotesModifiedAfter(lastSyncTime: Long): List<Note>
+
+
     @Transaction
     suspend fun updateTodoItemStatus(noteId: String, todoItemId: String, isCompleted: Boolean) {
         val note = getNoteById(noteId) ?: return
@@ -106,7 +110,7 @@ interface NoteDao {
         ))
     }
 
-    // 新增：更新笔记中的整个待办事项列表
+    // 更新笔记中的整个待办事项列表
     @Transaction
     suspend fun updateTodoItemsList(noteId: String, todoItems: List<TodoItem>) {
         val note = getNoteById(noteId) ?: return
@@ -117,7 +121,7 @@ interface NoteDao {
         ))
     }
 
-    // 新增：添加一个新的待办事项到笔记
+    // 添加一个新的待办事项到笔记
     @Transaction
     suspend fun addTodoItem(noteId: String, text: String) {
         val note = getNoteById(noteId) ?: return
@@ -138,7 +142,7 @@ interface NoteDao {
         ))
     }
 
-    // 新增：从笔记中删除一个待办事项
+    //从笔记中删除一个待办事项
     @Transaction
     suspend fun removeTodoItem(noteId: String, todoItemId: String) {
         val note = getNoteById(noteId) ?: return

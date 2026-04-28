@@ -12,16 +12,16 @@ class NoteViewModel(
     private val noteRepository: NoteRepository
 ) : AndroidViewModel(application) {
 
-    // 主屏幕显示的笔记：未删除且未归档
+    //未删除且未归档
     val allNotes = noteRepository.getAllNotes()
 
-    // 已归档的笔记
+    //已归档
     val archivedNotes = noteRepository.getAllArchivedNotes()
 
-    // 已删除的笔记（回收站）
+    //已删除
     val deletedNotes = noteRepository.getAllDeletedNotes()
 
-    // 已置顶的笔记
+    //已置顶的笔记
     val pinnedNotes = noteRepository.getAllPinnedNotes()
 
     fun insertNote(note: Note) {
@@ -43,35 +43,35 @@ class NoteViewModel(
         }
     }
 
-    // 软删除：将笔记移到回收站
+    //软删除
     fun moveNoteToTrash(note: Note) {
         viewModelScope.launch {
             noteRepository.moveNoteToTrash(note)
         }
     }
 
-    // 切换归档状态
+    //切换归档状态
     fun toggleArchiveStatus(note: Note) {
         viewModelScope.launch {
             noteRepository.toggleArchiveStatus(note)
         }
     }
 
-    // 从回收站恢复笔记
+    //从回收站恢复笔记
     fun restoreNoteFromTrash(note: Note) {
         viewModelScope.launch {
             noteRepository.restoreNoteFromTrash(note)
         }
     }
 
-    // 切换置顶状态
+    //切换置顶状态
     fun togglePinStatus(note: Note) {
         viewModelScope.launch {
             noteRepository.togglePinStatus(note)
         }
     }
 
-    // 清空回收站（永久删除所有已软删除的笔记）
+    //清空回收站
     fun emptyTrash() {
         viewModelScope.launch {
             noteRepository.emptyTrash()

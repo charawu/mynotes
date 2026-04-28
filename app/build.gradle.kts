@@ -69,6 +69,8 @@ dependencies {
     implementation(libs.androidx.compose.ui.text)
     implementation(libs.androidx.ui)
     implementation(libs.androidx.compose.ui.test)
+    implementation(libs.androidx.benchmark.traceprocessor)
+    implementation(libs.volley)
     ksp("androidx.room:room-compiler:2.8.4")
     implementation(libs.androidx.room.ktx)
 
@@ -88,7 +90,7 @@ dependencies {
 
     implementation("com.github.bumptech.glide:glide:5.0.7")
 
-    // 图片查看器
+    //图片查看
     //implementation("com.github.skydoves:imageviewer:2.2.1")
     implementation("androidx.compose.foundation:foundation:1.6.0")
     implementation("androidx.appcompat:appcompat:1.6.1")
@@ -98,6 +100,23 @@ dependencies {
 
     //图片加载
     implementation("io.coil-kt:coil-compose:2.6.0")
+
+    //数据库云端同步
+    implementation("com.squareup.retrofit2:retrofit:2.9.0")
+    implementation("com.squareup.retrofit2:converter-gson:2.9.0")
+    implementation("com.squareup.retrofit2:converter-scalars:2.9.0")
+    implementation("com.squareup.okhttp3:logging-interceptor:4.11.0")
+
+    implementation("androidx.datastore:datastore-preferences:1.0.0")
+
+    testImplementation("com.squareup.okhttp3:mockwebserver:5.3.2")
+
+    implementation("androidx.compose.runtime:runtime-livedata:1.5.4")
+
+    //Kotlin序列化
+    implementation("org.jetbrains.kotlinx:kotlinx-serialization-json:1.5.1")
+    //协程
+    implementation("org.jetbrains.kotlinx:kotlinx-coroutines-android:1.7.3")
 
     //Material Design Icons
     implementation("androidx.compose.material:material-icons-extended:1.5.4")

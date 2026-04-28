@@ -20,10 +20,6 @@ import androidx.compose.ui.unit.dp
 import com.v.v_notes.R
 import com.v.v_notes.ui.theme.MyNotesTheme
 
-/**
- * 底部导航菜单组件
- * 用于在ArchiveActivity和TrashActivity底部显示，支持快速切换
- */
 @Composable
 fun BottomNavMenu(
     selectedItem: Int = 1,
@@ -38,7 +34,7 @@ fun BottomNavMenu(
         containerColor = MaterialTheme.colorScheme.surface,
         contentColor = MaterialTheme.colorScheme.onSurface
     ) {
-        // Keep/Notes (主界面)
+        //主界面
         NavigationBarItem(
             selected = selectedItem == 1,
             onClick = { onItemSelected(1) },
@@ -59,7 +55,7 @@ fun BottomNavMenu(
             }
         )
 
-        // Archive (归档)
+        //Archive
         NavigationBarItem(
             selected = selectedItem == 3,
             onClick = { onItemSelected(3) },
@@ -80,7 +76,7 @@ fun BottomNavMenu(
             }
         )
 
-        // Trash (回收站)
+        //Trash
         NavigationBarItem(
             selected = selectedItem == 4,
             onClick = { onItemSelected(4) },
@@ -103,15 +99,6 @@ fun BottomNavMenu(
     }
 }
 
-/**
- * 增强版底部导航菜单组件
- * 可以根据设置选项决定是否包含提醒和设置项
- *
- * @param showAlertAndSetting 是否显示提醒和设置项（从设置中获取的Boolean值）
- * @param selectedItem 当前选中的菜单项
- * @param onItemSelected 菜单项点击回调
- * @param modifier 修饰符
- */
 @Composable
 fun EnhancedBottomNavMenu(
     showAlertAndSetting: Boolean = false,
@@ -127,7 +114,7 @@ fun EnhancedBottomNavMenu(
         containerColor = MaterialTheme.colorScheme.surface,
         contentColor = MaterialTheme.colorScheme.onSurface
     ) {
-        // Keep/Notes (主界面)
+        //keep
         NavigationBarItem(
             selected = selectedItem == 1,
             onClick = { onItemSelected(1) },
@@ -148,7 +135,7 @@ fun EnhancedBottomNavMenu(
             }
         )
 
-        // Archive (归档)
+        //archive
         NavigationBarItem(
             selected = selectedItem == 3,
             onClick = { onItemSelected(3) },
@@ -169,7 +156,7 @@ fun EnhancedBottomNavMenu(
             }
         )
 
-        // Trash (回收站)
+        //trash
         NavigationBarItem(
             selected = selectedItem == 4,
             onClick = { onItemSelected(4) },
@@ -190,9 +177,9 @@ fun EnhancedBottomNavMenu(
             }
         )
 
-        // 如果设置中开启了显示提醒和设置，则添加这些项
+        //设置选项
         if (showAlertAndSetting) {
-            // Alert (提醒)
+            //alert
             NavigationBarItem(
                 selected = selectedItem == 2,
                 onClick = { onItemSelected(2) },
@@ -213,7 +200,7 @@ fun EnhancedBottomNavMenu(
                 }
             )
 
-            // Setting (设置)
+            //setting
             NavigationBarItem(
                 selected = selectedItem == 5,
                 onClick = { onItemSelected(5) },
@@ -237,9 +224,7 @@ fun EnhancedBottomNavMenu(
     }
 }
 
-/**
- * 底部导航菜单的预览
- */
+
 @Preview(showBackground = true)
 @Composable
 fun BottomNavMenuPreview() {
@@ -247,7 +232,6 @@ fun BottomNavMenuPreview() {
         Column(
             modifier = Modifier.fillMaxWidth()
         ) {
-            // 模拟内容区域
             Box(
                 modifier = Modifier
                     .fillMaxWidth()
@@ -255,37 +239,8 @@ fun BottomNavMenuPreview() {
                     .background(Color.LightGray)
             )
 
-            // 底部导航菜单
             BottomNavMenu(
-                selectedItem = 3, // 模拟当前在归档页面
-                onItemSelected = { }
-            )
-        }
-    }
-}
-
-/**
- * 增强版底部导航菜单的预览
- */
-@Preview(showBackground = true)
-@Composable
-fun EnhancedBottomNavMenuPreview() {
-    MyNotesTheme {
-        Column(
-            modifier = Modifier.fillMaxWidth()
-        ) {
-            // 模拟内容区域
-            Box(
-                modifier = Modifier
-                    .fillMaxWidth()
-                    .weight(1f)
-                    .background(Color.LightGray)
-            )
-
-            // 增强版底部导航菜单（显示所有项）
-            EnhancedBottomNavMenu(
-                showAlertAndSetting = true,
-                selectedItem = 3, // 模拟当前在归档页面
+                selectedItem = 3,
                 onItemSelected = { }
             )
         }

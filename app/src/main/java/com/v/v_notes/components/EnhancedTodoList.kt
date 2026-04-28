@@ -35,7 +35,6 @@ import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import com.v.v_notes.R
 import com.v.v_notes.addlist.EditorTodoItem
-//import com.v.v_notes.addlist.EnhancedTodoItemCard
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.launch
 
@@ -51,7 +50,6 @@ fun EnhancedTodoList(
     val listState = rememberLazyListState()
     val coroutineScope = rememberCoroutineScope()
 
-    // 自动滚动到最后一项
     LaunchedEffect(todoItems.size) {
         if (todoItems.isNotEmpty()) {
             delay(100)
@@ -76,7 +74,7 @@ fun EnhancedTodoList(
                 color = MaterialTheme.colorScheme.primary
             )
 
-            // 添加新待办事项按钮
+            //添加新待办
             FilledTonalButton(
                 onClick = onAddNewItem,
                 modifier = Modifier
@@ -95,7 +93,7 @@ fun EnhancedTodoList(
         Spacer(modifier = Modifier.height(12.dp))
 
         if (todoItems.isEmpty()) {
-            // 空状态提示
+            //空提示
             Column(
                 modifier = Modifier
                     .fillMaxWidth()
@@ -121,7 +119,7 @@ fun EnhancedTodoList(
                 )
             }
         } else {
-            // 待办事项列表
+            //待办列表
             LazyColumn(
                 state = listState,
                 verticalArrangement = Arrangement.spacedBy(8.dp),
@@ -136,7 +134,6 @@ fun EnhancedTodoList(
                         enter = fadeIn() + slideInVertically(),
                         exit = fadeOut() + slideOutVertically()
                     ) {
-                        //只传递必要的参数
                         EnhancedTodoItemCard(
                             todo = todo,
                             index = index,

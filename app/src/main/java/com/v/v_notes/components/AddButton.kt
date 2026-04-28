@@ -33,7 +33,7 @@ fun AddButton(
 
     val rotationAngle by animateFloatAsState(
         targetValue = if (isActive) 45f else 0f,
-        animationSpec = tween(durationMillis = 300), // 300毫秒动画
+        animationSpec = tween(durationMillis = 300),
         label = "rotateAnimation"
     )
 

@@ -19,11 +19,7 @@ import androidx.compose.material3.Icon
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
-import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
-import androidx.compose.runtime.mutableStateOf
-import androidx.compose.runtime.remember
-import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.alpha
@@ -35,9 +31,7 @@ import com.v.v_notes.control.removeHtmlTags
 import com.v.v_notes.data.model.Note
 import java.text.SimpleDateFormat
 import java.util.Date
-import java.util.Locale
 import androidx.compose.ui.platform.LocalLocale
-import androidx.compose.ui.tooling.preview.Preview
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
@@ -57,7 +51,7 @@ fun NoteListItem(
                 onClick = onClick,
                 onLongClick = onLongPress
             )
-            //.alpha(alpha)  // 🔴 应用alpha动画
+            //alpha动画
             .then(modifier),
         shape = MaterialTheme.shapes.medium,
         colors = CardDefaults.cardColors(
@@ -75,7 +69,7 @@ fun NoteListItem(
                 .padding(16.dp),
             verticalAlignment = Alignment.CenterVertically
         ) {
-            // 笔记内容
+            //笔记内容
             Column(
                 modifier = Modifier.weight(1f)
             ) {
@@ -108,9 +102,8 @@ fun NoteListItem(
                     )
                 }
 
-                // 🔴 显示待办事项列表（不显示复选框，用删除线和颜色区分）
                 if (note.todoItems.isNotEmpty()) {
-                    val showTodoItems = note.todoItems.take(3) // 最多显示3个待办项
+                    val showTodoItems = note.todoItems.take(3) //最多3个
                     val remainingCount = note.todoItems.size - 3
 
                     Column(
@@ -143,7 +136,6 @@ fun NoteListItem(
                                 verticalAlignment = Alignment.CenterVertically,
                                 modifier = Modifier.padding(vertical = 2.dp)
                             ) {
-                                // 使用圆点符号代替复选框
                                 Text(
                                     text = "•",
                                     style = MaterialTheme.typography.bodySmall,
@@ -163,7 +155,6 @@ fun NoteListItem(
                                 )
                             }
 
-                            // 如果有更多的待办项，显示提示
                             if (index == 2 && remainingCount > 0) {
                                 Text(
                                     text = "... 还有${remainingCount}个待办项",
@@ -179,7 +170,6 @@ fun NoteListItem(
                         }
                     }
                 } else if (plainContent.isEmpty() && note.todoItems.isEmpty()) {
-                    // 如果笔记内容和待办事项都为空，显示占位文本
                     Text(
                         text = "空笔记",
                         style = MaterialTheme.typography.bodyMedium,
@@ -254,13 +244,11 @@ fun NoteListItem(
                 }
             }
 
-            // 🔴 复选框移到右侧，并使用固定宽度避免布局抖动
             Box(
                 modifier = Modifier
-                    .width(48.dp)  // 固定宽度，防止布局抖动
+                    .width(48.dp)
                     .padding(start = 8.dp)
             ) {
-                // 🔴 修复：使用Alpha动画而不是显示/隐藏，避免布局抖动
                 val checkboxAlpha by animateFloatAsState(
                     targetValue = if (isSelectionMode) 1f else 0f,
                     animationSpec = tween(200)

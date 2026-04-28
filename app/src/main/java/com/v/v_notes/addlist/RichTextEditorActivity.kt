@@ -1,6 +1,9 @@
 package com.v.v_notes.addlist
 
 import android.app.Application
+import android.graphics.Bitmap
+import android.graphics.Canvas
+import android.graphics.Color
 import android.net.Uri
 import android.os.Build
 import android.os.Bundle
@@ -25,6 +28,7 @@ import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Add
+import androidx.compose.material.icons.filled.Brush
 import androidx.compose.material.icons.filled.Close
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.FilledTonalButton
@@ -69,7 +73,11 @@ import com.v.v_notes.data.model.TodoItem as DbTodoItem
 import com.v.v_notes.factory.NoteViewModelFactory
 import com.v.v_notes.ui.theme.MyNotesTheme
 import com.v.v_notes.viewmodel.NoteViewModel
+import java.io.File
+import java.io.FileOutputStream
+import java.text.SimpleDateFormat
 import java.util.Date
+import java.util.Locale
 import java.util.UUID
 import kotlinx.coroutines.delay
 import com.v.v_notes.components.EnhancedImagePreviewGrid
@@ -78,12 +86,11 @@ import com.v.v_notes.control.PhotoViewerEditor
 import com.v.v_notes.control.ViewMode
 import androidx.compose.material3.Surface
 import androidx.compose.runtime.mutableIntStateOf
-import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.graphics.Color as ComposeColor
 import androidx.compose.runtime.rememberCoroutineScope
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
-import java.io.File
 
 class RichTextEditorActivity : ComponentActivity() {
     @RequiresApi(Build.VERSION_CODES.VANILLA_ICE_CREAM)
@@ -98,7 +105,7 @@ class RichTextEditorActivity : ComponentActivity() {
             MyNotesTheme() {
                 RichTextEditorScreen(
                     noteId = noteId,
-                    quickAction = quickAction, // 传递快捷操作类型
+                    quickAction = quickAction,
                     onBackClick = { finish() },
                     onSaveClick = { note ->
                         finish()
@@ -107,7 +114,15 @@ class RichTextEditorActivity : ComponentActivity() {
             }
         }
     }
+
+    override fun onDestroy() {
+        //销毁临时文件
+        val imageFileManager = ImageFileManager(this)
+        imageFileManager.clearTempStorage()
+        super.onDestroy()
+    }
 }
+
 class HistoryManager(maxHistorySize: Int = 50) {
     private val undoStack = mutableListOf<String>()
     private val redoStack = mutableListOf<String>()
@@ -117,7 +132,7 @@ class HistoryManager(maxHistorySize: Int = 50) {
         if (undoStack.isEmpty() || undoStack.last() != state) {
             undoStack.add(state)
 
-            //限制历史记录大小
+            //限制历史大小
             if (undoStack.size > maxSize) {
                 undoStack.removeAt(0)
             }
@@ -154,7 +169,6 @@ class HistoryManager(maxHistorySize: Int = 50) {
 
     //是否可以重做
     fun canRedo(): Boolean = redoStack.isNotEmpty()
-
 }
 
 @RequiresApi(Build.VERSION_CODES.VANILLA_ICE_CREAM)
@@ -178,9 +192,12 @@ fun RichTextEditorScreen(
     var canRedo by remember { mutableStateOf(false) }
     var handledQuickAction by remember { mutableStateOf(false) }
     val imageFileManager = remember { ImageFileManager(context) }
-
-    // 添加一个状态来控制是否显示富文本编辑器
     var showRichTextEditor by remember { mutableStateOf(true) }
+
+    var showImageEditDialog by remember { mutableStateOf(false) }
+    var selectedImageUri by remember { mutableStateOf<Uri?>(null) }
+    var selectedImageIndex by remember { mutableIntStateOf(-1) }
+    var imagePreviewRefreshKey by remember { mutableIntStateOf(0) }
 
     val noteViewModel: NoteViewModel = viewModel(
         factory = NoteViewModelFactory(
@@ -192,7 +209,18 @@ fun RichTextEditorScreen(
         contract = ActivityResultContracts.PickVisualMedia()
     ) { uri ->
         uri?.let {
-            insertedImages.add(it)
+            coroutineScope.launch {
+                val tempUri = withContext(Dispatchers.IO) {
+                    imageFileManager.saveImageToTempStorage(it)
+                }
+                tempUri?.let { safeUri ->
+                    insertedImages.add(safeUri)
+                } ?: run {
+                    withContext(Dispatchers.Main) {
+                        Toast.makeText(context, "图片保存失败，请重试", Toast.LENGTH_SHORT).show()
+                    }
+                }
+            }
         }
     }
 
@@ -206,6 +234,51 @@ fun RichTextEditorScreen(
         null
     }
 
+    val createBlankCanvasAndOpenEditor: () -> Unit = {
+        coroutineScope.launch {
+            withContext(Dispatchers.IO) {
+                try {
+                    val width = 1080
+                    val height = 1920
+                    val bitmap = Bitmap.createBitmap(width, height, Bitmap.Config.ARGB_8888)
+                    val canvas = Canvas(bitmap)
+                    canvas.drawColor(Color.WHITE)
+
+                    val tempDir = File(context.filesDir, "temp_notes_images")
+                    if (!tempDir.exists() && !tempDir.mkdirs()) {
+                        withContext(Dispatchers.Main) {
+                            Toast.makeText(context, "创建画布失败：无法准备临时目录", Toast.LENGTH_SHORT).show()
+                        }
+                        return@withContext
+                    }
+
+                    val timeStamp = SimpleDateFormat("yyyyMMdd_HHmmss", Locale.getDefault()).format(Date())
+                    val fileName = "TEMP_CANVAS_${timeStamp}_${UUID.randomUUID().toString().substring(0, 8)}.jpg"
+                    val tempFile = File(tempDir, fileName)
+
+                    FileOutputStream(tempFile).use { outStream ->
+                        bitmap.compress(Bitmap.CompressFormat.JPEG, 100, outStream)
+                    }
+
+                    val tempUri = Uri.fromFile(tempFile)
+
+                    withContext(Dispatchers.Main) {
+                        insertedImages.add(tempUri)
+                        selectedImageIndex = insertedImages.lastIndex
+                        selectedImageUri = tempUri
+                        showImageEditDialog = true
+                    }
+
+                } catch (e: Exception) {
+                    e.printStackTrace()
+                    withContext(Dispatchers.Main) {
+                        Toast.makeText(context, "创建画布失败: ${e.message}", Toast.LENGTH_SHORT).show()
+                    }
+                }
+            }
+        }
+    }
+
     LaunchedEffect(editorState.toHtml()) {
         val currentHtml = editorState.toHtml()
         if (currentHtml.isNotBlank()) {
@@ -215,7 +288,7 @@ fun RichTextEditorScreen(
         canRedo = historyManager.canRedo()
     }
 
-    // 编辑模式,加载现有数据
+    //编辑末世加载数据
     LaunchedEffect(existingNote) {
         if (existingNote != null) {
             title = existingNote.title
@@ -243,7 +316,7 @@ fun RichTextEditorScreen(
                 )
             }
 
-            // 如果有待办事项，默认显示待办列表
+            //判断待办
             if (existingNote.todoItems.isNotEmpty()) {
                 showRichTextEditor = false
             }
@@ -263,8 +336,12 @@ fun RichTextEditorScreen(
                 }
                 "todo" -> {
                     todoItems.add(EditorTodoItem(text = ""))
-                    // 添加待办时切换到待办列表视图
+                    //待办,切换
                     showRichTextEditor = false
+                    handledQuickAction = true
+                }
+                "draw" -> {
+                    createBlankCanvasAndOpenEditor()
                     handledQuickAction = true
                 }
                 else -> {
@@ -299,86 +376,88 @@ fun RichTextEditorScreen(
         canRedo = historyManager.canRedo()
     }
 
-    val onSaveNote = {
-        val savedImageUris = imageFileManager.saveImagesToPrivateStorage(insertedImages)
+    val onSaveNote: () -> Unit = {
+        coroutineScope.launch {
+            withContext(Dispatchers.IO) {
+                val savedImageUris = mutableListOf<String>()
 
-        val noteContent = editorState.toHtml()
+                for (uri in insertedImages) {
+                    if (imageFileManager.isTempUri(uri)) {
+                        //来自临时目录，移动到正式目录
+                        val permanentUri = imageFileManager.moveTempImageToPrivate(uri)
+                        permanentUri?.let { savedImageUris.add(it) }
+                    } else {
+                        //正式目录
+                        savedImageUris.add(uri.toString())
+                    }
+                }
 
-        if (noteId != null && existingNote != null) {
-            val oldImages = existingNote.imageUris.toMutableList()
-            val newImages = savedImageUris.toMutableList()
+                val noteContent = editorState.toHtml()
 
-            val imagesToDelete = oldImages.filter { oldImageUri ->
-                !newImages.any { newImageUri ->
-                    newImageUri.contains(oldImageUri.substringAfterLast("/"))
+                if (noteId != null && existingNote != null) {
+                    val oldImages = existingNote.imageUris.toMutableList()
+                    val newImages = savedImageUris.toMutableList()
+
+                    val imagesToDelete = oldImages.filter { oldImageUri ->
+                        !newImages.any { newImageUri ->
+                            val oldFile = File(Uri.parse(oldImageUri).path ?: "")
+                            val newFile = File(Uri.parse(newImageUri).path ?: "")
+                            oldFile.name == newFile.name
+                        }
+                    }
+                    //删除不使用的图片
+                    imageFileManager.deleteImagesFromPrivateStorage(imagesToDelete)
+                }
+
+                val note = Note(
+                    id = noteId ?: UUID.randomUUID().toString(),
+                    title = title,
+                    content = noteContent,
+                    imageUris = savedImageUris,
+                    todoItems = todoItems.map { todoItem ->
+                        DbTodoItem(
+                            id = todoItem.id,
+                            text = todoItem.text,
+                            isCompleted = todoItem.isCompleted,
+                            createdAt = todoItem.createdAt.time
+                        )
+                    },
+                    createdAt = if (noteId != null) {
+                        existingNote?.createdAt ?: System.currentTimeMillis()
+                    } else {
+                        System.currentTimeMillis()
+                    },
+                    updatedAt = System.currentTimeMillis()
+                )
+
+                withContext(Dispatchers.Main) {
+                    if (noteId != null) {
+                        noteViewModel.updateNote(note)
+                        Toast.makeText(context, "更新成功", Toast.LENGTH_SHORT).show()
+                    } else {
+                        noteViewModel.insertNote(note)
+                        Toast.makeText(context, "保存成功", Toast.LENGTH_SHORT).show()
+                    }
+
+                    onSaveClick(EditorNoteItem(
+                        id = note.id,
+                        title = note.title,
+                        content = note.content,
+                        imageUris = note.imageUris,
+                        todoItems = todoItems,
+                        createdAt = Date(note.createdAt),
+                        updatedAt = Date(note.updatedAt)
+                    ))
                 }
             }
-
-            imageFileManager.deleteImagesFromPrivateStorage(imagesToDelete)
         }
-
-        val note = Note(
-            id = noteId ?: UUID.randomUUID().toString(),
-            title = title,
-            content = noteContent,
-            imageUris = savedImageUris,
-            todoItems = todoItems.map { todoItem ->
-                DbTodoItem(
-                    id = todoItem.id,
-                    text = todoItem.text,
-                    isCompleted = todoItem.isCompleted,
-                    createdAt = todoItem.createdAt.time
-                )
-            },
-            createdAt = if (noteId != null) {
-                existingNote?.createdAt ?: System.currentTimeMillis()
-            } else {
-                System.currentTimeMillis()
-            },
-            updatedAt = System.currentTimeMillis()
-        )
-
-        if (noteId != null) {
-            noteViewModel.updateNote(note)
-            Toast.makeText(context, "更新成功", Toast.LENGTH_SHORT).show()
-        } else {
-            noteViewModel.insertNote(note)
-            Toast.makeText(context, "保存成功", Toast.LENGTH_SHORT).show()
-        }
-
-        onSaveClick(EditorNoteItem(
-            id = note.id,
-            title = note.title,
-            content = note.content,
-            imageUris = note.imageUris,
-            todoItems = todoItems,
-            createdAt = Date(note.createdAt),
-            updatedAt = Date(note.updatedAt)
-        ))
     }
 
     val hasTodoItems = todoItems.isNotEmpty()
 
-    // 图片编辑对话框状态
-    var showImageEditDialog by remember { mutableStateOf(false) }
-    var selectedImageUri by remember { mutableStateOf<Uri?>(null) }
-    var selectedImageIndex by remember { mutableIntStateOf(-1) }
+    val toolbarHeight = 48.dp
 
-    fun showEditDialog(index: Int, uri: Uri) {
-        selectedImageIndex = index
-        selectedImageUri = uri
-        showImageEditDialog = true
-    }
-
-    val onImageEditSaveSuccess: (File) -> Unit = { savedFile: File ->
-        coroutineScope.launch {
-            withContext(Dispatchers.Main) {
-                Toast.makeText(context, "图片编辑已保存", Toast.LENGTH_SHORT).show()
-            }
-        }
-    }
-
-    Box {
+    Box(modifier = Modifier.fillMaxSize()) {
         Scaffold(
             topBar = {
                 TopAppBar(
@@ -398,7 +477,7 @@ fun RichTextEditorScreen(
                         }
                     },
                     actions = {
-                        // 撤销
+                        //撤销
                         IconButton(
                             onClick = onUndo,
                             enabled = canUndo
@@ -410,7 +489,7 @@ fun RichTextEditorScreen(
                             )
                         }
 
-                        // 重做
+                        //重做
                         IconButton(
                             onClick = onRedo,
                             enabled = canRedo
@@ -422,7 +501,7 @@ fun RichTextEditorScreen(
                             )
                         }
 
-                        // 切换按钮：只有在有待办事项时才显示
+                        //切换按钮紧在有待办才显示
                         if (hasTodoItems) {
                             IconButton(
                                 onClick = {
@@ -431,9 +510,9 @@ fun RichTextEditorScreen(
                             ) {
                                 Icon(
                                     painter = if (showRichTextEditor) {
-                                        painterResource(R.drawable.outline_check_box_24) // 切换到待办列表图标
+                                        painterResource(R.drawable.outline_check_box_24)
                                     } else {
-                                        painterResource(R.drawable.outline_text_fields_24) // 切换到文本编辑器图标
+                                        painterResource(R.drawable.outline_text_fields_24)
                                     },
                                     contentDescription = if (showRichTextEditor) "显示待办列表" else "显示文本编辑器",
                                     tint = MaterialTheme.colorScheme.primary
@@ -441,7 +520,7 @@ fun RichTextEditorScreen(
                             }
                         }
 
-                        // 保存按钮
+                        //保存按钮
                         IconButton(onClick = onSaveNote) {
                             Icon(
                                 tint = MaterialTheme.colorScheme.primary,
@@ -457,7 +536,6 @@ fun RichTextEditorScreen(
                 modifier = Modifier
                     .fillMaxSize()
                     .padding(paddingValues)
-                    .imePadding()
             ) {
                 OutlinedTextField(
                     value = title,
@@ -476,15 +554,13 @@ fun RichTextEditorScreen(
 
                 HorizontalDivider(modifier = Modifier.padding(vertical = 8.dp))
 
-                // 使用showRichTextEditor变量控制显示哪个视图
                 if (showRichTextEditor) {
-                    // 显示富文本编辑器
+                    //文本编辑器
                     Column(
                         modifier = Modifier
                             .fillMaxWidth()
                             .weight(1f)
                     ) {
-                        // 文本编辑器
                         RichTextEditor(
                             state = editorState,
                             modifier = Modifier
@@ -494,7 +570,7 @@ fun RichTextEditorScreen(
                             placeholder = { Text("开始输入笔记内容...") }
                         )
 
-                        // 插入的图片预览
+                        //插入图片预览
                         if (insertedImages.isNotEmpty()) {
                             Spacer(modifier = Modifier.height(16.dp))
                             Text(
@@ -503,7 +579,6 @@ fun RichTextEditorScreen(
                                 fontSize = 14.sp,
                                 fontWeight = FontWeight.Medium
                             )
-                            // 关键修改：添加底部间距，避免被工具栏遮挡
                             EnhancedImagePreviewGrid(
                                 images = insertedImages,
                                 onRemoveImage = { index ->
@@ -515,14 +590,15 @@ fun RichTextEditorScreen(
                                     )
                                 },
                                 onEditImage = { index, uri ->
-                                    showEditDialog(index, uri)
+                                    selectedImageIndex = index
+                                    selectedImageUri = uri
+                                    showImageEditDialog = true
                                 },
-                                modifier = Modifier.padding(bottom = 64.dp) // 添加底部间距
+                                key = imagePreviewRefreshKey //key变化时重载
                             )
                         }
                     }
                 } else {
-                    // 显示待办列表
                     Column(
                         modifier = Modifier
                             .fillMaxWidth()
@@ -552,7 +628,6 @@ fun RichTextEditorScreen(
                                 color = MaterialTheme.colorScheme.onSurface,
                                 modifier = Modifier.padding(bottom = 8.dp)
                             )
-                            // 关键修改：在待办列表模式下也添加底部间距
                             EnhancedImagePreviewGrid(
                                 images = insertedImages,
                                 onRemoveImage = { index ->
@@ -564,56 +639,85 @@ fun RichTextEditorScreen(
                                     )
                                 },
                                 onEditImage = { index, uri ->
-                                    showEditDialog(index, uri)
+                                    selectedImageIndex = index
+                                    selectedImageUri = uri
+                                    showImageEditDialog = true
                                 },
-                                modifier = Modifier.padding(bottom = 64.dp) // 添加底部间距
+                                key = imagePreviewRefreshKey //key变化重载
                             )
                         } else {
-                            FilledTonalButton(
-                                onClick = {
-                                    imagePicker.launch(
-                                        PickVisualMediaRequest(ActivityResultContracts.PickVisualMedia.ImageOnly)
+                            Column {
+                                FilledTonalButton(
+                                    onClick = {
+                                        imagePicker.launch(
+                                            PickVisualMediaRequest(ActivityResultContracts.PickVisualMedia.ImageOnly)
+                                        )
+                                    },
+                                    modifier = Modifier
+                                        .fillMaxWidth()
+                                        .height(48.dp)
+                                ) {
+                                    Icon(
+                                        imageVector = Icons.Default.Add,
+                                        contentDescription = "添加图片"
                                     )
-                                },
-                                modifier = Modifier
-                                    .fillMaxWidth()
-                                    .height(48.dp)
-                                    .padding(bottom = 16.dp) // 为添加图片按钮添加底部间距
-                            ) {
-                                Icon(
-                                    imageVector = Icons.Default.Add,
-                                    contentDescription = "添加图片"
-                                )
-                                Spacer(modifier = Modifier.width(8.dp))
-                                Text(text = "添加图片")
+                                    Spacer(modifier = Modifier.width(8.dp))
+                                    Text(text = "添加图片")
+                                }
+
+                                Spacer(modifier = Modifier.height(8.dp))
+
+                                FilledTonalButton(
+                                    onClick = {
+                                        createBlankCanvasAndOpenEditor()
+                                    },
+                                    modifier = Modifier
+                                        .fillMaxWidth()
+                                        .height(48.dp)
+                                ) {
+                                    Icon(
+                                        imageVector = Icons.Default.Brush,
+                                        contentDescription = "创建画布"
+                                    )
+                                    Spacer(modifier = Modifier.width(8.dp))
+                                    Text(text = "创建画布")
+                                }
                             }
                         }
                     }
                 }
+                Spacer(modifier = Modifier.height(toolbarHeight + 8.dp))
             }
         }
 
-        // 格式化工具栏只在显示文本编辑器时显示
+        //判断是否在编辑界面
         if (showRichTextEditor) {
-            FormattingToolbar(
+            Box(
                 modifier = Modifier
-                    .imePadding()
-                    .align(Alignment.BottomCenter),
-                editorState = editorState,
-                onImageClick = {
-                    imagePicker.launch(
-                        PickVisualMediaRequest(ActivityResultContracts.PickVisualMedia.ImageOnly)
-                    )
-                },
-                onAddTodo = {
-                    todoItems.add(EditorTodoItem(text = ""))
-                    // 添加待办事项后切换到待办列表视图
-                    showRichTextEditor = false
-                }
-            )
+                    .fillMaxSize()
+            ) {
+                FormattingToolbar(
+                    modifier = Modifier
+                        .imePadding()
+                        .align(Alignment.BottomCenter)
+                        .fillMaxWidth(),
+                    editorState = editorState,
+                    onImageClick = {
+                        imagePicker.launch(
+                            PickVisualMediaRequest(ActivityResultContracts.PickVisualMedia.ImageOnly)
+                        )
+                    },
+                    onAddTodo = {
+                        todoItems.add(EditorTodoItem(text = ""))
+                        showRichTextEditor = false
+                    },
+                    onDrawClick = {
+                        createBlankCanvasAndOpenEditor()
+                    }
+                )
+            }
         }
 
-        // 图片编辑对话框
         if (showImageEditDialog && selectedImageUri != null) {
             ImageEditDialog(
                 imageUri = selectedImageUri!!,
@@ -622,13 +726,21 @@ fun RichTextEditorScreen(
                     selectedImageUri = null
                     selectedImageIndex = -1
                 },
-                onSaveSuccess = onImageEditSaveSuccess
+                onSaveSuccess = { savedFile: File ->
+                    coroutineScope.launch {
+                        withContext(Dispatchers.Main) {
+                            Toast.makeText(context, "图片编辑已保存", Toast.LENGTH_SHORT).show()
+                            // 刷新逻辑
+                            imagePreviewRefreshKey++
+                        }
+                    }
+                }
             )
         }
     }
 }
 
-// 图片编辑对话框组件
+//图片编辑框组件
 @Composable
 fun ImageEditDialog(
     imageUri: Uri,
@@ -644,13 +756,15 @@ fun ImageEditDialog(
     ) {
         Surface(
             modifier = Modifier.fillMaxSize(),
-            color = Color.Black
+            color = ComposeColor.Black
         ) {
             Box(modifier = Modifier.fillMaxSize()) {
                 PhotoViewerEditor(
                     imageLocalPath = imageUri,
-                    initialMode = ViewMode.EDIT, // 直接进入编辑模式
-                    onModeChange = { /* 处理模式切换 */ },
+                    initialMode = ViewMode.EDIT,
+                    onModeChange = {
+                        //TODO编辑末世切换
+                    },
                     onSaveSuccess = { savedFile ->
                         onSaveSuccess(savedFile)
                         onDismiss()
@@ -668,7 +782,7 @@ fun ImageEditDialog(
                     }
                 )
 
-                // 关闭按钮
+                //关闭
                 IconButton(
                     onClick = onDismiss,
                     modifier = Modifier
@@ -677,9 +791,9 @@ fun ImageEditDialog(
                         .size(48.dp)
                 ) {
                     Icon(
-                        androidx.compose.material.icons.Icons.Default.Close,
+                        imageVector = Icons.Default.Close,
                         contentDescription = "关闭编辑",
-                        tint = Color.White
+                        tint = ComposeColor.White
                     )
                 }
             }
@@ -687,9 +801,7 @@ fun ImageEditDialog(
     }
 }
 
-/**
- * 通过HTML处理重置为纯文本（备用方案）
- */
+//文本重置
 @OptIn(ExperimentalRichTextApi::class)
 fun resetToPlainText(editorState: RichTextState) {
     try {
@@ -705,11 +817,6 @@ fun resetToPlainText(editorState: RichTextState) {
     }
 }
 
-/**
- * 笔记项数据模型
- * 注意：添加Room注解
- * @Entity(tableName = "notes")
- */
 data class EditorNoteItem(
     val id: String = UUID.randomUUID().toString(),
     val title: String = "",
@@ -720,10 +827,6 @@ data class EditorNoteItem(
     val updatedAt: Date = Date()
 )
 
-/**
- * 待办事项数据模型
- * 注意：如果存储为独立表，需要添加@Entity注解
- */
 data class EditorTodoItem(
     val id: String = UUID.randomUUID().toString(),
     val text: String,

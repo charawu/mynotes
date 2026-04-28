@@ -3,17 +3,12 @@ package com.v.v_notes.control
 import android.content.Context
 import android.graphics.Bitmap
 import android.graphics.BitmapFactory
-import android.graphics.Color as AndroidColor
 import android.net.Uri
 import android.util.Log
 import androidx.compose.foundation.Image
 import androidx.compose.foundation.background
 import androidx.compose.foundation.border
-import androidx.compose.foundation.layout.*
 import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.filled.*
-import androidx.compose.material3.*
-import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clipToBounds
@@ -30,13 +25,48 @@ import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.input.pointer.pointerInput
 import androidx.compose.foundation.gestures.detectTransformGestures
-import androidx.compose.ui.unit.sp
-import ja.burhanrashid52.photoeditor.*
+import androidx.compose.foundation.layout.Arrangement
+import androidx.compose.foundation.layout.Box
+import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.layout.Row
+import androidx.compose.foundation.layout.Spacer
+import androidx.compose.foundation.layout.fillMaxSize
+import androidx.compose.foundation.layout.fillMaxWidth
+import androidx.compose.foundation.layout.height
+import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.layout.size
+import androidx.compose.material.icons.filled.Clear
+import androidx.compose.material.icons.filled.Edit
+import androidx.compose.material.icons.filled.Redo
+import androidx.compose.material.icons.filled.Refresh
+import androidx.compose.material.icons.filled.Save
+import androidx.compose.material.icons.filled.Undo
+import androidx.compose.material.icons.filled.Visibility
+import androidx.compose.material3.Card
+import androidx.compose.material3.CardDefaults
+import androidx.compose.material3.CircularProgressIndicator
+import androidx.compose.material3.ExperimentalMaterial3Api
+import androidx.compose.material3.FloatingActionButton
+import androidx.compose.material3.Icon
+import androidx.compose.material3.IconButton
+import androidx.compose.material3.MaterialTheme
+import androidx.compose.material3.Slider
+import androidx.compose.material3.Text
+import androidx.compose.material3.TopAppBar
+import androidx.compose.runtime.Composable
+import androidx.compose.runtime.LaunchedEffect
+import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableIntStateOf
+import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.remember
+import androidx.compose.runtime.rememberCoroutineScope
+import androidx.compose.runtime.setValue
+import ja.burhanrashid52.photoeditor.PhotoEditor
+import ja.burhanrashid52.photoeditor.PhotoEditorView
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
 import java.io.File
-import java.io.FileOutputStream
 import java.lang.Exception
 
 @OptIn(ExperimentalMaterial3Api::class)
@@ -51,10 +81,8 @@ fun PhotoViewerEditor(
     val context = LocalContext.current
     val coroutineScope = rememberCoroutineScope()
 
-    // 当前模式状态
     var currentMode by remember { mutableStateOf(initialMode) }
 
-    // 预览模式手势状态
     var scale by remember { mutableStateOf(1f) }
     var rotation by remember { mutableStateOf(0f) }
     var offset by remember { mutableStateOf(Offset.Zero) }
@@ -67,19 +95,17 @@ fun PhotoViewerEditor(
         }
     }
 
-    // PhotoEditor 状态
     val photoEditorViewState = remember { mutableStateOf<PhotoEditorView?>(null) }
     val photoEditorState = remember { mutableStateOf<PhotoEditor?>(null) }
 
-    // 画笔状态
+    //画笔状态
     var brushColor by remember { mutableStateOf(ComposeColor.Red) }
     var brushSize by remember { mutableStateOf(5f) }
     var isDrawingEnabled by remember { mutableStateOf(true) }
 
-    // 用于强制刷新 PhotoEditor 的键
     val refreshKey = remember { mutableIntStateOf(0) }
 
-    // 初始化 PhotoEditor
+    //初始化
     LaunchedEffect(bitmapState.value, refreshKey.intValue) {
         if (bitmapState.value != null && photoEditorState.value == null) {
             Log.d("PhotoViewerEditor", "初始化 PhotoEditor, refreshKey: ${refreshKey.intValue}")
@@ -87,43 +113,43 @@ fun PhotoViewerEditor(
             val view = PhotoEditorView(context)
             photoEditorViewState.value = view
 
-            // 设置图片
             bitmapState.value?.let { bitmap ->
                 view.source.setImageBitmap(bitmap)
             }
 
-            // 构建 PhotoEditor
+            //构建PhotoEditor
             val editor = PhotoEditor.Builder(context, view)
                 .setPinchTextScalable(true)
                 .setClipSourceImage(true)
                 .build()
 
-            // 启用画笔模式
+            //启用画笔模式
             editor.setBrushDrawingMode(true)
 
-            // 设置初始画笔参数
+            //设置初始画笔参数
             val colorInt = composeColorToAndroidColor(brushColor)
-
-            // 修复：正确设置画笔颜色和大小
-            try {
-                // 方法1：尝试通过属性设置
-                editor.brushColor = colorInt
-                editor.brushSize = brushSize
-                Log.d("PhotoViewerEditor", "通过属性设置画笔: 颜色=$colorInt, 大小=$brushSize")
-            } catch (e: Exception) {
-                Log.e("PhotoViewerEditor", "通过属性设置失败，尝试其他方法", e)
-                try {
-                    // 方法2：尝试通过方法设置
-                    editor.javaClass.getMethod("setBrushColor", Int::class.java).invoke(editor, colorInt)
-                    editor.javaClass.getMethod("setBrushSize", Float::class.java).invoke(editor, brushSize)
-                    Log.d("PhotoViewerEditor", "通过反射方法设置画笔")
-                } catch (e2: Exception) {
-                    Log.e("PhotoViewerEditor", "所有设置方法都失败", e2)
-                }
-            }
-
+            editor.brushColor = colorInt
+            editor.brushSize = brushSize
             photoEditorState.value = editor
-            Log.d("PhotoViewerEditor", "PhotoEditor 初始化完成")
+
+//            try {
+//                //属性设置
+//
+//                Log.d("PhotoViewerEditor", "属性,画笔 color=$colorInt,size=$brushSize")
+//            } catch (e: Exception) {
+//                Log.e("PhotoViewerEditor", "属性error", e)
+//                try {
+//                    //方法设置
+//                    editor.javaClass.getMethod("setBrushColor", Int::class.java).invoke(editor, colorInt)
+//                    editor.javaClass.getMethod("setBrushSize", Float::class.java).invoke(editor, brushSize)
+//                    Log.d("PhotoViewerEditor", ",方法,画笔")
+//                } catch (e2: Exception) {
+//                    Log.e("PhotoViewerEditor", "all_error", e2)
+//                }
+//            }
+//
+//
+//            Log.d("PhotoViewerEditor", "PhotoEditor ok")
         }
     }
 
@@ -161,13 +187,13 @@ fun PhotoViewerEditor(
         }
     }
 
-    // UI
+    //UI
     Column(
         modifier = Modifier
             .fillMaxSize()
             .background(MaterialTheme.colorScheme.background)
     ) {
-        // 顶部工具栏
+        //顶部工具
         TopAppBar(
             title = { Text("图片编辑") },
             actions = {
@@ -205,7 +231,7 @@ fun PhotoViewerEditor(
             }
         )
 
-        // 主内容区
+        //主内容
         Box(
             modifier = Modifier
                 .fillMaxSize()
@@ -215,7 +241,7 @@ fun PhotoViewerEditor(
             bitmapState.value?.let { bitmap ->
                 when (currentMode) {
                     ViewMode.VIEW -> {
-                        // 预览模式
+                        //预览
                         Box(
                             modifier = Modifier
                                 .fillMaxSize()
@@ -244,7 +270,7 @@ fun PhotoViewerEditor(
                             )
                         }
 
-                        // 重置按钮
+                        //重置按钮
                         FloatingActionButton(
                             onClick = {
                                 scale = 1f
@@ -260,7 +286,7 @@ fun PhotoViewerEditor(
                     }
 
                     ViewMode.EDIT -> {
-                        // 编辑模式 - 显示 PhotoEditorView
+                        //编辑
                         AndroidView(
                             factory = {
                                 photoEditorViewState.value ?: PhotoEditorView(context)
@@ -268,13 +294,11 @@ fun PhotoViewerEditor(
                             modifier = Modifier.fillMaxSize()
                         )
 
-                        // 画笔设置工具栏
                         Column(
                             modifier = Modifier
                                 .align(Alignment.TopStart)
                                 .padding(8.dp)
                         ) {
-                            // 画笔颜色选择
                             Card(
                                 modifier = Modifier
                                     .padding(bottom = 8.dp)
@@ -309,9 +333,8 @@ fun PhotoViewerEditor(
                                                     .clickable {
                                                         brushColor = color
                                                         val colorInt = composeColorToAndroidColor(color)
-                                                        Log.d("PhotoViewerEditor", "点击颜色: ${index + 1}, 颜色值: $colorInt")
 
-                                                        // 立即更新状态，LaunchedEffect 会监听到并更新 PhotoEditor
+                                                        Log.d("PhotoViewerEditor", "点击颜色: ${index + 1}, 颜色值: $colorInt")
                                                     }
                                                     .then(
                                                         if (brushColor == color) {
@@ -330,7 +353,7 @@ fun PhotoViewerEditor(
                                 }
                             }
 
-                            // 画笔大小
+                            //画笔大小
                             Card(
                                 modifier = Modifier
                                     .clip(RoundedCornerShape(8.dp))
@@ -349,7 +372,6 @@ fun PhotoViewerEditor(
                                             brushSize = newSize
                                             Log.d("PhotoViewerEditor", "滑块设置画笔大小: $newSize")
 
-                                            // 立即更新状态，LaunchedEffect 会监听到并更新 PhotoEditor
                                         },
                                         onValueChangeFinished = {
                                             Log.d("PhotoViewerEditor", "滑块释放，最终画笔大小: $brushSize")
@@ -360,7 +382,6 @@ fun PhotoViewerEditor(
                             }
                         }
 
-                        // 底部控制工具栏
                         BottomControlToolbar(
                             modifier = Modifier
                                 .align(Alignment.BottomCenter)
@@ -372,7 +393,6 @@ fun PhotoViewerEditor(
                     }
                 }
             } ?: run {
-                // 加载中
                 Column(
                     modifier = Modifier.fillMaxSize(),
                     verticalArrangement = Arrangement.Center,
@@ -387,9 +407,7 @@ fun PhotoViewerEditor(
     }
 }
 
-/**
- * 底部控制工具栏组件
- */
+
 @Composable
 fun BottomControlToolbar(
     modifier: Modifier = Modifier,
@@ -416,7 +434,7 @@ fun BottomControlToolbar(
             horizontalArrangement = Arrangement.SpaceEvenly,
             verticalAlignment = Alignment.CenterVertically
         ) {
-            // 撤销按钮
+            //撤销按钮
             IconButton(
                 onClick = onUndo,
                 modifier = Modifier
@@ -430,7 +448,7 @@ fun BottomControlToolbar(
                 )
             }
 
-            // 重做按钮
+            //重做按钮
             IconButton(
                 onClick = onRedo,
                 modifier = Modifier
@@ -444,7 +462,7 @@ fun BottomControlToolbar(
                 )
             }
 
-            // 清空按钮
+            //清空按钮
             IconButton(
                 onClick = onClear,
                 modifier = Modifier
@@ -461,7 +479,7 @@ fun BottomControlToolbar(
     }
 }
 
-// 转换 Compose Color 为 Android Color
+//颜色转换
 private fun composeColorToAndroidColor(composeColor: ComposeColor): Int {
     val red = (composeColor.red * 255).toInt()
     val green = (composeColor.green * 255).toInt()
@@ -469,7 +487,7 @@ private fun composeColorToAndroidColor(composeColor: ComposeColor): Int {
     return android.graphics.Color.rgb(red, green, blue)
 }
 
-// 加载本地图片
+//加载图片
 private suspend fun loadBitmapFromLocal(context: Context, imageLocalPath: Any): Bitmap? {
     return withContext(Dispatchers.IO) {
         try {
@@ -496,15 +514,13 @@ private suspend fun loadBitmapFromLocal(context: Context, imageLocalPath: Any): 
     }
 }
 
-/**
- * 保存并覆盖原文件
- */
+//覆盖保存
 private suspend fun saveAndOverwriteImage(
     photoEditor: PhotoEditor?,
     originalPath: Any,
-    context: Context,
     onSuccess: ((File) -> Unit)? = null,
-    onError: ((Throwable) -> Unit)? = null
+    onError: ((Throwable) -> Unit)? = null,
+    context: Context
 ) {
     if (photoEditor == null) {
         onError?.invoke(IllegalStateException("PhotoEditor 未初始化"))
@@ -533,14 +549,13 @@ private suspend fun saveAndOverwriteImage(
                 else -> throw IllegalArgumentException("不支持的路径类型: $originalPath")
             }
 
-            // 确保目标文件存在
             if (!targetFile.exists()) {
                 throw IllegalStateException("原文件不存在: ${targetFile.absolutePath}")
             }
 
             Log.d("PhotoViewerEditor", "目标文件: ${targetFile.absolutePath}，文件大小: ${targetFile.length()} bytes")
 
-            // 使用 saveAsFile 方法保存到原文件，实现覆盖
+            //
             photoEditor.saveAsFile(
                 targetFile.absolutePath,
                 object : PhotoEditor.OnSaveListener {
@@ -564,8 +579,8 @@ private suspend fun saveAndOverwriteImage(
     }
 }
 
-// 模式枚举
+
 enum class ViewMode {
-    VIEW,  // 预览模式
-    EDIT   // 编辑模式
+    VIEW,
+    EDIT
 }

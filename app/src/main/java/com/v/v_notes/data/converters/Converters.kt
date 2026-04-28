@@ -9,7 +9,6 @@ import java.util.Date
 class Converters {
     private val gson = Gson()
 
-    // TodoItem列表转换
     @TypeConverter
     fun fromTodoItemList(value: List<TodoItem>): String {
         return gson.toJson(value)
@@ -25,7 +24,7 @@ class Converters {
         }
     }
 
-    // String列表转换（用于imageUris）
+    //String列表转换
     @TypeConverter
     fun fromStringList(value: List<String>): String {
         return gson.toJson(value)
@@ -41,7 +40,7 @@ class Converters {
         }
     }
 
-    // Date转换
+    //Date转换
     @TypeConverter
     fun fromDate(date: Date?): Long? {
         return date?.time

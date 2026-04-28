@@ -17,7 +17,7 @@ object SettingsManager {
         const val FIXED_MENU = "fixed menu"
     }
 
-    // 初始化，在应用启动时调用一次
+    //初始化
     fun init(context: Context) {
         settingsFile = File(context.filesDir, FILE_NAME)
         Log.d(TAG, "设置文件路径: ${settingsFile.absolutePath}")

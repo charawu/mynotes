@@ -4,7 +4,6 @@ import android.app.Application
 import android.content.Intent
 import android.widget.Toast
 import androidx.activity.compose.rememberLauncherForActivityResult
-import androidx.activity.result.ActivityResult
 import androidx.activity.result.contract.ActivityResultContracts
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
@@ -45,6 +44,7 @@ import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableIntStateOf
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.rememberCoroutineScope
@@ -57,6 +57,7 @@ import androidx.compose.ui.unit.sp
 import androidx.lifecycle.viewmodel.compose.viewModel
 import com.mohamedrejeb.richeditor.annotation.ExperimentalRichTextApi
 import com.mohamedrejeb.richeditor.model.rememberRichTextState
+import com.mohamedrejeb.richeditor.ui.material3.RichTextEditor
 import com.v.v_notes.addlist.RichTextEditorActivity
 import com.v.v_notes.control.NoteShareHelper
 import com.v.v_notes.data.database.NoteDatabase
@@ -74,7 +75,6 @@ import kotlin.text.ifEmpty
 fun NoteDetailScreen(
     noteId: String,
     onBackClick: () -> Unit,
-    onEditClick: (String) -> Unit,
     onImageClick: (String, List<String>) -> Unit = { _, _ -> },
     modifier: Modifier = Modifier
 ) {
@@ -96,10 +96,12 @@ fun NoteDetailScreen(
     var showPermanentDeleteDialog by remember { mutableStateOf(false) }
     var showShareOptionsDialog by remember { mutableStateOf(false) }
 
-    // 富文本状态
     val richTextState = rememberRichTextState()
 
-    // 当笔记加载完成后，设置HTML内容
+    //图片预览刷新key
+    var imageRefreshKey by remember { mutableIntStateOf(0) }
+
+    //当笔记加载完成后,设置HTML内容
     LaunchedEffect(note) {
         note?.let { loadedNote ->
             withContext(Dispatchers.Main) {
@@ -108,23 +110,24 @@ fun NoteDetailScreen(
         }
     }
 
-    // 🔧 修改：添加ActivityResultLauncher来监听编辑界面的返回
     val editNoteLauncher = rememberLauncherForActivityResult(
         contract = ActivityResultContracts.StartActivityForResult()
     ) { result ->
-        // 当编辑界面返回时，无论保存成功与否，都重新加载数据
+        //强制刷新,没招了
         if (result.resultCode == android.app.Activity.RESULT_OK ||
             result.resultCode == android.app.Activity.RESULT_CANCELED) {
-            // 重新加载笔记
             scope.launch {
                 viewModel.loadNote(noteId)
+
+                imageRefreshKey++
             }
         }
     }
 
-    // 🔧 修改：统一加载笔记的LaunchedEffect
     LaunchedEffect(noteId) {
         viewModel.loadNote(noteId)
+
+        imageRefreshKey = 0
     }
 
     val imageUris = remember(note) {
@@ -150,7 +153,7 @@ fun NoteDetailScreen(
                     IconButton(onClick = onBackClick) {
                         Icon(
                             imageVector = Icons.Default.ArrowBack,
-                            contentDescription = "返回"
+                            contentDescription = null
                         )
                     }
                 },
@@ -162,7 +165,7 @@ fun NoteDetailScreen(
                             ) {
                                 Icon(
                                     imageVector = Icons.Default.MoreVert,
-                                    contentDescription = "菜单"
+                                    contentDescription = null
                                 )
                             }
 
@@ -170,7 +173,7 @@ fun NoteDetailScreen(
                                 expanded = menuExpanded,
                                 onDismissRequest = { menuExpanded = false }
                             ) {
-                                // 1. 删除/恢复菜单项
+                                //删除/恢复菜单
                                 DropdownMenuItem(
                                     text = {
                                         Row(
@@ -336,13 +339,11 @@ fun NoteDetailScreen(
                 CircularProgressIndicator()
             }
         } else if (note != null) {
-            // 使用原始NoteDetailContent，但为每个部分添加点击事件
             Column(
                 modifier = modifier
                     .fillMaxSize()
                     .padding(innerPadding)
             ) {
-                // 1. 标题部分 - 可点击
                 Card(
                     modifier = Modifier
                         .fillMaxWidth()
@@ -355,7 +356,6 @@ fun NoteDetailScreen(
                                 ).apply {
                                     putExtra("noteId", noteId)
                                 }
-                                // 🔧 修改：使用launcher启动，而不是直接startActivity
                                 editNoteLauncher.launch(intent)
                             } else {
                                 Toast.makeText(context, "已删除的笔记无法编辑", Toast.LENGTH_SHORT).show()
@@ -376,7 +376,7 @@ fun NoteDetailScreen(
                             color = MaterialTheme.colorScheme.primary
                         )
 
-                        // 标题内容
+                        //标题内容
                         Text(
                             text = note!!.title.ifEmpty { "无标题" },
                             style = MaterialTheme.typography.headlineMedium,
@@ -394,7 +394,7 @@ fun NoteDetailScreen(
 
                 Spacer(modifier = Modifier.height(8.dp))
 
-                // 2. 正文部分 - 只有在没有待办事项时才显示，并且可点击
+                //正文
                 if (note!!.content.isNotEmpty()) {
                     Card(
                         modifier = Modifier
@@ -408,8 +408,9 @@ fun NoteDetailScreen(
                                     ).apply {
                                         putExtra("noteId", noteId)
                                     }
-                                    // 🔧 修改：使用launcher启动
+
                                     editNoteLauncher.launch(intent)
+
                                 } else {
                                     Toast.makeText(context, "已删除的笔记无法编辑", Toast.LENGTH_SHORT).show()
                                 }
@@ -428,8 +429,7 @@ fun NoteDetailScreen(
                                 color = MaterialTheme.colorScheme.primary
                             )
 
-                            // 富文本编辑器（只读模式显示HTML内容）
-                            com.mohamedrejeb.richeditor.ui.material3.RichTextEditor(
+                            RichTextEditor(
                                 state = richTextState,
                                 modifier = Modifier
                                     .fillMaxWidth()
@@ -447,9 +447,8 @@ fun NoteDetailScreen(
                     Spacer(modifier = Modifier.height(8.dp))
                 }
 
-                // 3. 待办事项部分 - 如果有待办事项，显示（不添加整体点击，但内部可点击切换）
+                //待办事项
                 if (note!!.todoItems.isNotEmpty()) {
-                    // 使用原来的待办事项预览组件
                     Card(
                         modifier = Modifier
                             .fillMaxWidth()
@@ -462,10 +461,9 @@ fun NoteDetailScreen(
                                     ).apply {
                                         putExtra("noteId", noteId)
                                     }
-                                    // 🔧 修改：使用launcher启动
                                     editNoteLauncher.launch(intent)
                                 } else {
-                                    Toast.makeText(context, "已删除的笔记无法编辑", Toast.LENGTH_SHORT).show()
+                                    Toast.makeText(context, "已删除的笔记不能编辑", Toast.LENGTH_SHORT).show()
                                 }
                             },
                         elevation = CardDefaults.cardElevation(defaultElevation = 2.dp)
@@ -489,7 +487,7 @@ fun NoteDetailScreen(
                     Spacer(modifier = Modifier.height(8.dp))
                 }
 
-                // 4. 图片预览部分 - 如果有图片，显示（标题区域可点击编辑）
+                //图片预览
                 if (note!!.imageUris.isNotEmpty()) {
                     Card(
                         modifier = Modifier
@@ -503,7 +501,6 @@ fun NoteDetailScreen(
                                     ).apply {
                                         putExtra("noteId", noteId)
                                     }
-                                    // 🔧 修改：使用launcher启动
                                     editNoteLauncher.launch(intent)
                                 } else {
                                     Toast.makeText(context, "已删除的笔记无法编辑", Toast.LENGTH_SHORT).show()
@@ -516,14 +513,13 @@ fun NoteDetailScreen(
                                 .fillMaxWidth()
                                 .padding(16.dp)
                         ) {
-                            // 图片标题区域 - 可点击编辑
                             Row(
                                 verticalAlignment = Alignment.CenterVertically,
                                 modifier = Modifier
                                     .fillMaxWidth()
                                     .padding(bottom = 8.dp)
                             ) {
-                                androidx.compose.material3.Icon(
+                                Icon(
                                     imageVector = Icons.Default.Image,
                                     contentDescription = "图片",
                                     modifier = Modifier.size(20.dp),
@@ -538,7 +534,6 @@ fun NoteDetailScreen(
                                 )
                             }
 
-                            // 图片预览网格
                             ImagePreviewGrid(
                                 imageUris = note!!.imageUris,
                                 onImageClick = { index ->
@@ -546,7 +541,15 @@ fun NoteDetailScreen(
                                 },
                                 modifier = Modifier
                                     .fillMaxWidth()
-                                    .padding(bottom = 12.dp)
+                                    .padding(bottom = 12.dp),
+                                refreshKey = imageRefreshKey,
+                                onImageEditSuccess = {
+                                    imageRefreshKey++
+
+                                    scope.launch {
+                                        viewModel.loadNote(noteId)
+                                    }
+                                }
                             )
                         }
                     }
@@ -554,7 +557,7 @@ fun NoteDetailScreen(
                     Spacer(modifier = Modifier.height(8.dp))
                 }
 
-                // 5. 统计信息部分 - 放在底部
+                //统计
                 Row(
                     modifier = Modifier
                         .fillMaxWidth()
@@ -563,11 +566,9 @@ fun NoteDetailScreen(
                     NoteMetaInfo(note = note!!)
                 }
 
-                // 底部空白
                 Spacer(modifier = Modifier.height(32.dp))
             }
         } else {
-            // 笔记不存在或加载中
             Box(
                 modifier = Modifier.fillMaxSize(),
                 contentAlignment = Alignment.Center
@@ -581,12 +582,6 @@ fun NoteDetailScreen(
                         style = MaterialTheme.typography.titleLarge,
                         color = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.5f)
                     )
-                    Spacer(modifier = Modifier.height(8.dp))
-                    Text(
-                        text = "无法找到ID为 $noteId 的笔记",
-                        style = MaterialTheme.typography.bodyMedium,
-                        color = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.3f)
-                    )
                 }
             }
         }
@@ -594,11 +589,14 @@ fun NoteDetailScreen(
 
     if (showShareOptionsDialog && note != null) {
         AlertDialog(
-            onDismissRequest = { showShareOptionsDialog = false },
-            title = { Text("选择分享方式") },
+            onDismissRequest = { },
+            title = {
+                Text("选择分享方式")
+                    },
             text = {
                 Column {
                     Text("请选择要分享的内容：")
+
                     Spacer(modifier = Modifier.height(16.dp))
 
                     LazyColumn {
@@ -660,7 +658,7 @@ fun NoteDetailScreen(
                     }
                 }
             },
-            confirmButton = {},
+            confirmButton = { },
             dismissButton = {
                 TextButton(
                     onClick = { showShareOptionsDialog = false }
@@ -710,9 +708,6 @@ fun NoteDetailScreen(
     }
 }
 
-/**
- * 分享选项项
- */
 @Composable
 fun ShareOptionItem(
     icon: androidx.compose.ui.graphics.vector.ImageVector,
@@ -735,7 +730,7 @@ fun ShareOptionItem(
                 .padding(12.dp),
             verticalAlignment = Alignment.CenterVertically
         ) {
-            androidx.compose.material3.Icon(
+            Icon(
                 imageVector = icon,
                 contentDescription = null,
                 modifier = Modifier.size(24.dp)

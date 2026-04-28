@@ -37,7 +37,6 @@ import androidx.compose.ui.focus.FocusRequester
 import androidx.compose.ui.focus.focusRequester
 import androidx.compose.ui.focus.onFocusChanged
 import androidx.compose.ui.graphics.Color
-import androidx.compose.ui.semantics.SemanticsProperties.ImeAction
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextDecoration
 import androidx.compose.ui.unit.dp
@@ -59,17 +58,17 @@ fun EnhancedTodoItemCard(
     var isEditing by remember { mutableStateOf(false) }
     val focusRequester = remember { FocusRequester() }
 
-    // 跟踪文本内容
+    //跟踪文本
     var textState by rememberSaveable(todo.id) { mutableStateOf(todo.text) }
 
-    // 监听外部todo.text变化
+    //监听外部待办文本
     LaunchedEffect(todo.text) {
         if (todo.text != textState) {
             textState = todo.text
         }
     }
 
-    // 自动获取焦点
+    //获取焦点
     LaunchedEffect(Unit) {
         if (textState.isEmpty()) {
             delay(50)
@@ -96,7 +95,6 @@ fun EnhancedTodoItemCard(
                 .padding(vertical = 12.dp, horizontal = 16.dp),
             verticalAlignment = Alignment.CenterVertically
         ) {
-            // 🔧 修改：序号 - 移除圆形背景，直接显示数字
             Text(
                 text = "${index + 1}.",
                 fontSize = 16.sp,
@@ -107,7 +105,6 @@ fun EnhancedTodoItemCard(
 
             Spacer(modifier = Modifier.width(12.dp))
 
-            // 🔧 修改：复选框 - 改为方形
             Box(
                 modifier = Modifier
                     .size(20.dp)
@@ -136,7 +133,7 @@ fun EnhancedTodoItemCard(
 
             Spacer(modifier = Modifier.width(12.dp))
 
-            // 文本输入框
+            //文本输入
             Column(
                 modifier = Modifier.weight(1f)
             ) {
@@ -170,16 +167,14 @@ fun EnhancedTodoItemCard(
                             TextDecoration.None
                         }
                     ),
-                    maxLines = 2,
-//                    keyboardOptions = KeyboardOptions(
-//                        imeAction = ImeAction.Done
-//                    ),
+                    maxLines = 1,
+                    keyboardOptions = KeyboardOptions(
+                        imeAction = androidx.compose.ui.text.input.ImeAction.Done
+                    ),
                     keyboardActions = KeyboardActions(
                         onDone = {
-                            // 按下回车键时的处理
-                            if (isLastItem) {
-                                onAddNewItem()
-                            }
+                            //回车加项
+                            onAddNewItem()
                         }
                     ),
                     colors = androidx.compose.material3.TextFieldDefaults.colors(
@@ -195,7 +190,7 @@ fun EnhancedTodoItemCard(
 
             Spacer(modifier = Modifier.width(8.dp))
 
-            // 删除按钮
+            //删除按钮
             IconButton(
                 onClick = { onItemRemoved(index) },
                 modifier = Modifier.size(36.dp)

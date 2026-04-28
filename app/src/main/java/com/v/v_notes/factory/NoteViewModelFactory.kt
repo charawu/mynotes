@@ -14,7 +14,6 @@ class NoteViewModelFactory(
     @Suppress("UNCHECKED_CAST")
     override fun <T : ViewModel> create(modelClass: Class<T>): T {
         if (modelClass.isAssignableFrom(NoteViewModel::class.java)) {
-            // 直接在工厂中创建依赖
             val database = NoteDatabase.getInstance(application)
             val noteDao = database.noteDao()
             val repository = NoteRepositoryImpl(noteDao)

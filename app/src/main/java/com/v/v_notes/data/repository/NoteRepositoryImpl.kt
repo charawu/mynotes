@@ -11,17 +11,14 @@ class NoteRepositoryImpl(
     private val noteDao: NoteDao
 ) : NoteRepository {
 
-    // 修正：返回 Flow<List<Note>>
     override fun getAllNotes(): Flow<List<Note>> = noteDao.getAllNotes()
 
-    // 使用String类型的id
     override suspend fun getNoteById(id: String): Note? {
         return withContext(Dispatchers.IO) {
             noteDao.getNoteById(id)
         }
     }
 
-    // 不再返回Long
     override suspend fun insertNote(note: Note) {
         withContext(Dispatchers.IO) {
             noteDao.insertNote(note)
@@ -55,11 +52,10 @@ class NoteRepositoryImpl(
     }
 
     override fun getNotesInTimeRange(startTime: Long, endTime: Long): Flow<List<Note>> {
-        // 如果不需要这个方法，可以简化实现
         return noteDao.getAllNotes()
     }
 
-    // 不再返回List<Long>
+
     override suspend fun insertNotes(notes: List<Note>) {
         withContext(Dispatchers.IO) {
             notes.forEach { noteDao.insertNote(it) }
@@ -106,7 +102,7 @@ class NoteRepositoryImpl(
         }
     }
 
-    // 3. 永久删除（清空回收站）
+    //永久删除（清空回收站）
     override suspend fun emptyTrash() {
         withContext(Dispatchers.IO) {
             noteDao.permanentlyDeleteAllTrashed()

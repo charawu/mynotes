@@ -1,16 +1,26 @@
 package com.v.v_notes.components
 
-import androidx.compose.animation.*
-import androidx.compose.animation.core.*
+import androidx.compose.animation.AnimatedVisibility
+import androidx.compose.animation.core.FastOutSlowInEasing
+import androidx.compose.animation.core.LinearOutSlowInEasing
+import androidx.compose.animation.core.tween
+import androidx.compose.animation.fadeIn
+import androidx.compose.animation.fadeOut
+import androidx.compose.animation.scaleIn
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
-import androidx.compose.foundation.layout.*
+import androidx.compose.foundation.layout.Box
+import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.layout.Row
+import androidx.compose.foundation.layout.Spacer
+import androidx.compose.foundation.layout.height
+import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
-import androidx.compose.runtime.*
+import androidx.compose.runtime.Composable
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
@@ -24,7 +34,7 @@ import com.v.v_notes.ui.theme.MyNotesTheme
 @Composable
 fun AddButtonList(
     onPhotoClick: () -> Unit = {},
-    //onDrawClick: () -> Unit = {},  TODO:draw
+    onDrawClick: () -> Unit = {},
     onCheckClick: () -> Unit = {},
     onTextClick: () -> Unit = {},
     expanded: Boolean = false
@@ -64,6 +74,7 @@ fun AddButtonList(
         ) {
             Box(
                 modifier = modifier
+                    .padding(12.dp)
                     .clickable(
                         onClick = onPhotoClick
                     ),
@@ -72,15 +83,10 @@ fun AddButtonList(
                 Row(
                     verticalAlignment = Alignment.CenterVertically
                 ) {
-                    IconButton(
-                        onClick = onPhotoClick,
-                        modifier = Modifier
-                    ) {
-                        Icon(
-                            painter = painterResource(R.drawable.outline_insert_photo_24),
-                            contentDescription = null
-                        )
-                    }
+                    Icon(
+                        painter = painterResource(R.drawable.outline_insert_photo_24),
+                        contentDescription = null
+                    )
                     Text(
                         modifier = Modifier.padding(end = 5.dp),
                         text = stringResource(R.string.add_menu_photo)
@@ -114,34 +120,30 @@ fun AddButtonList(
                 )
             )
         ) {
-//            Box(
-//                modifier = modifier
-//                    .clickable(
-//                        onClick = onDrawClick
-//                    ),
-//                contentAlignment = Alignment.Center
-//            ) {
-//                Row(
-//                    verticalAlignment = Alignment.CenterVertically
-//                ) {
-//                    IconButton(
-//                        onClick = onDrawClick,
-//                        modifier = Modifier
-//                    ) {
-//                        Icon(
-//                            painter = painterResource(R.drawable.outline_draw_24),
-//                            contentDescription = null
-//                        )
-//                    }
-//                    Text(
-//                        modifier = Modifier.padding(end = 5.dp),
-//                        text = stringResource(R.string.add_menu_draw)
-//                    )
-//                }
-//            }  TODO:draw
+            Box(
+                modifier = modifier
+                    .padding(12.dp)
+                    .clickable(
+                        onClick = onDrawClick
+                    ),
+                contentAlignment = Alignment.Center
+            ) {
+                Row(
+                    verticalAlignment = Alignment.CenterVertically
+                ) {
+                    Icon(
+                        painter = painterResource(R.drawable.outline_draw_24),
+                        contentDescription = null
+                    )
+                    Text(
+                        modifier = Modifier.padding(end = 5.dp),
+                        text = stringResource(R.string.add_menu_draw)
+                    )
+                }
+            }
         }
 
-        //Spacer(modifier = Modifier.height(5.dp))
+        Spacer(modifier = Modifier.height(5.dp))
 
         AnimatedVisibility(
             visible = expanded,
@@ -168,6 +170,7 @@ fun AddButtonList(
         ) {
             Box(
                 modifier = modifier
+                    .padding(12.dp)
                     .clickable(
                         onClick = onCheckClick
                     ),
@@ -176,15 +179,10 @@ fun AddButtonList(
                 Row(
                     verticalAlignment = Alignment.CenterVertically
                 ) {
-                    IconButton(
-                        onClick = onCheckClick,
-                        modifier = Modifier
-                    ) {
-                        Icon(
-                            painter = painterResource(R.drawable.outline_check_box_24),
-                            contentDescription = null
-                        )
-                    }
+                    Icon(
+                        painter = painterResource(R.drawable.outline_check_box_24),
+                        contentDescription = null
+                    )
                     Text(
                         modifier = Modifier.padding(end = 5.dp),
                         text = stringResource(R.string.add_menu_todo)
@@ -220,6 +218,7 @@ fun AddButtonList(
         ) {
             Box(
                 modifier = modifier
+                    .padding(12.dp)
                     .clickable(
                         onClick = onTextClick
                     ),
@@ -228,15 +227,10 @@ fun AddButtonList(
                 Row(
                     verticalAlignment = Alignment.CenterVertically
                 ) {
-                    IconButton(
-                        onClick = onTextClick,
-                        modifier = Modifier
-                    ) {
-                        Icon(
-                            painter = painterResource(R.drawable.outline_text_fields_24),
-                            contentDescription = null
-                        )
-                    }
+                    Icon(
+                        painter = painterResource(R.drawable.outline_check_box_24),
+                        contentDescription = null
+                    )
                     Text(
                         modifier = Modifier.padding(end = 5.dp),
                         text = stringResource(R.string.add_menu_text)
@@ -253,7 +247,7 @@ fun AddButtonListPreview(){
     MyNotesTheme() {
         AddButtonList(
             onPhotoClick = {},
-//            onDrawClick = {},  TODO:draw
+            onDrawClick = {},
             onCheckClick = {},
             onTextClick = {},
             expanded = true

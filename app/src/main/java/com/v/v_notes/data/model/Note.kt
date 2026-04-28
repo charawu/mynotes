@@ -7,21 +7,20 @@ import java.util.UUID
 @Entity(tableName = "notes")
 data class Note(
     @PrimaryKey
-    val id: String = UUID.randomUUID().toString(), // 改为String类型UUID
+    val id: String = UUID.randomUUID().toString(),
     val title: String = "",
-    val content: String = "", // 存储富文本HTML内容
-    val imageUris: List<String> = emptyList(), // 改为imageUris
-    val todoItems: List<TodoItem> = emptyList(), // 使用编辑器的TodoItem
+    val content: String = "",
+    val imageUris: List<String> = emptyList(),
+    val todoItems: List<TodoItem> = emptyList(),
 
-    val isArchived: Boolean = false, // 是否归档
-    val isDeleted: Boolean = false,  // 是否在回收站（软删除）
-    val isPinned: Boolean = false,    // 是否置顶
+    val isArchived: Boolean = false,
+    val isDeleted: Boolean = false,
+    val isPinned: Boolean = false,
 
     val createdAt: Long = System.currentTimeMillis(),
     val updatedAt: Long = System.currentTimeMillis()
 )
 
-// 使用编辑器中的TodoItem结构
 data class TodoItem(
     val id: String = UUID.randomUUID().toString(),
     val text: String,

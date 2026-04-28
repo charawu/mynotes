@@ -33,7 +33,7 @@ fun Menu(
     onDismissRequest: () -> Unit = {},
     selectedItem: Int = 1,
     onItemSelected: (Int) -> Unit = {},
-    showOnlyAlertAndSetting: Boolean = false  // 新增：是否只显示提醒和设置
+    showOnlyAlertAndSetting: Boolean = false
 ) {
     Box(
         modifier = modifier
@@ -43,9 +43,9 @@ fun Menu(
             expanded = expanded,
             onDismissRequest = onDismissRequest
         ) {
-            // 如果不是只显示提醒和设置，则显示所有菜单项
+
             if (!showOnlyAlertAndSetting) {
-                // 1. Keep
+                //keep
                 Box(
                     modifier = Modifier
                         .fillMaxWidth()
@@ -78,7 +78,7 @@ fun Menu(
                     )
                 }
 
-//                // 2. Alert
+//                //alert
 //                Box(
 //                    modifier = Modifier
 //                        .fillMaxWidth()
@@ -109,9 +109,9 @@ fun Menu(
 //                        },
 //                        modifier = Modifier.fillMaxWidth()
 //                    )
-//                }
+//                }//TODO
 
-                // 3. Archive
+                //archive
                 Box(
                     modifier = Modifier
                         .fillMaxWidth()
@@ -144,7 +144,7 @@ fun Menu(
                     )
                 }
 
-                // 4. Trash
+                //trash
                 Box(
                     modifier = Modifier
                         .fillMaxWidth()
@@ -213,7 +213,7 @@ fun Menu(
 //                }
 //            }
 
-            // 5. Setting (总是显示，不添加选中框)
+            //setting
             DropdownMenuItem(
                 modifier = Modifier
                     .padding(all = 5.dp),
