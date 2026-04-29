@@ -367,7 +367,7 @@ fun SettingActivityScreen(
                     Spacer(modifier = Modifier.width(8.dp))
 
                     Text(
-                        text = "版本 1.0.0",
+                        text = "Version:" + stringResource(R.string.V_version),
                         style = MaterialTheme.typography.bodySmall,
                         color = MaterialTheme.colorScheme.onSurfaceVariant
                     )
