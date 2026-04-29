@@ -1,5 +1,3 @@
-import org.jetbrains.kotlin.gradle.idea.proto.com.google.protobuf.stringValue
-
 //import org.gradle.kotlin.dsl.implementation
 
 plugins {
