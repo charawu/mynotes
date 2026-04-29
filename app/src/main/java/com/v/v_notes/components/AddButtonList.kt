@@ -228,7 +228,7 @@ fun AddButtonList(
                     verticalAlignment = Alignment.CenterVertically
                 ) {
                     Icon(
-                        painter = painterResource(R.drawable.outline_check_box_24),
+                        painter = painterResource(R.drawable.outline_text_fields_24),
                         contentDescription = null
                     )
                     Text(
