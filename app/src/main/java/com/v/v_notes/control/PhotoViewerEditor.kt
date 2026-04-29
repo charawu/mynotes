@@ -61,6 +61,7 @@ import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.runtime.setValue
+import androidx.compose.ui.unit.sp
 import ja.burhanrashid52.photoeditor.PhotoEditor
 import ja.burhanrashid52.photoeditor.PhotoEditorView
 import kotlinx.coroutines.Dispatchers
@@ -286,110 +287,137 @@ fun PhotoViewerEditor(
                     }
 
                     ViewMode.EDIT -> {
-                        //编辑
-                        AndroidView(
-                            factory = {
-                                photoEditorViewState.value ?: PhotoEditorView(context)
-                            },
-                            modifier = Modifier.fillMaxSize()
-                        )
+                        //等待图片和编辑器初始化
+                        val isEditorReady =
+                            bitmapState.value != null && photoEditorViewState.value != null
 
-                        Column(
-                            modifier = Modifier
-                                .align(Alignment.TopStart)
-                                .padding(8.dp)
+                        Box(
+                            modifier = Modifier.fillMaxSize(),
+                            contentAlignment = Alignment.Center
                         ) {
-                            Card(
-                                modifier = Modifier
-                                    .padding(bottom = 8.dp)
-                                    .clip(RoundedCornerShape(8.dp))
-                            ) {
+                            if (!isEditorReady) {
+                                // 示加载
                                 Column(
-                                    modifier = Modifier.padding(8.dp)
+                                    verticalArrangement = Arrangement.Center,
+                                    horizontalAlignment = Alignment.CenterHorizontally
                                 ) {
-                                    Text(
-                                        text = "画笔颜色",
-                                        style = MaterialTheme.typography.labelSmall,
-                                        modifier = Modifier.padding(bottom = 4.dp)
-                                    )
-                                    Row(
-                                        horizontalArrangement = Arrangement.spacedBy(8.dp)
-                                    ) {
-                                        listOf(
-                                            ComposeColor.Red,
-                                            ComposeColor.Blue,
-                                            ComposeColor.Green,
-                                            ComposeColor.Black,
-                                            ComposeColor.White,
-                                            ComposeColor.Yellow,
-                                            ComposeColor.Magenta,
-                                            ComposeColor.Cyan
-                                        ).forEachIndexed { index, color ->
-                                            Box(
-                                                modifier = Modifier
-                                                    .size(30.dp)
-                                                    .clip(RoundedCornerShape(4.dp))
-                                                    .background(color)
-                                                    .clickable {
-                                                        brushColor = color
-                                                        val colorInt = composeColorToAndroidColor(color)
+                                    CircularProgressIndicator()
+                                    Spacer(modifier = Modifier.height(16.dp))
+                                    Text("正在准备图片编辑器...", fontSize = 14.sp)
+                                }
+                            } else {
+                                //显示编辑界面
+                                AndroidView(
+                                    factory = { photoEditorViewState.value!! },  // 确保不为空
+                                    modifier = Modifier.fillMaxSize()
+                                )
 
-                                                        Log.d("PhotoViewerEditor", "点击颜色: ${index + 1}, 颜色值: $colorInt")
-                                                    }
-                                                    .then(
-                                                        if (brushColor == color) {
-                                                            Modifier.border(
-                                                                width = 2.dp,
-                                                                color = MaterialTheme.colorScheme.primary,
-                                                                shape = RoundedCornerShape(4.dp)
+                                Column(
+                                    modifier = Modifier
+                                        .align(Alignment.TopStart)
+                                        .padding(8.dp)
+                                ) {
+                                    Card(
+                                        modifier = Modifier
+                                            .padding(bottom = 8.dp)
+                                            .clip(RoundedCornerShape(8.dp))
+                                    ) {
+                                        Column(
+                                            modifier = Modifier.padding(8.dp)
+                                        ) {
+                                            Text(
+                                                text = "画笔颜色",
+                                                style = MaterialTheme.typography.labelSmall,
+                                                modifier = Modifier.padding(bottom = 4.dp)
+                                            )
+                                            Row(
+                                                horizontalArrangement = Arrangement.spacedBy(8.dp)
+                                            ) {
+                                                listOf(
+                                                    ComposeColor.Red,
+                                                    ComposeColor.Blue,
+                                                    ComposeColor.Green,
+                                                    ComposeColor.Black,
+                                                    ComposeColor.White,
+                                                    ComposeColor.Yellow,
+                                                    ComposeColor.Magenta,
+                                                    ComposeColor.Cyan
+                                                ).forEachIndexed { index, color ->
+                                                    Box(
+                                                        modifier = Modifier
+                                                            .size(30.dp)
+                                                            .clip(RoundedCornerShape(4.dp))
+                                                            .background(color)
+                                                            .clickable {
+                                                                brushColor = color
+                                                                val colorInt =
+                                                                    composeColorToAndroidColor(color)
+                                                                Log.d(
+                                                                    "PhotoViewerEditor",
+                                                                    "点击颜色: ${index + 1}, 颜色值: $colorInt"
+                                                                )
+                                                            }
+                                                            .then(
+                                                                if (brushColor == color) {
+                                                                    Modifier.border(
+                                                                        width = 2.dp,
+                                                                        color = MaterialTheme.colorScheme.primary,
+                                                                        shape = RoundedCornerShape(4.dp)
+                                                                    )
+                                                                } else {
+                                                                    Modifier
+                                                                }
                                                             )
-                                                        } else {
-                                                            Modifier
-                                                        }
                                                     )
+                                                }
+                                            }
+                                        }
+                                    }
+
+                                    //画笔大小
+                                    Card(
+                                        modifier = Modifier
+                                            .clip(RoundedCornerShape(8.dp))
+                                    ) {
+                                        Column(
+                                            modifier = Modifier.padding(8.dp)
+                                        ) {
+                                            Text(
+                                                text = "画笔大小: ${brushSize.toInt()}px",
+                                                style = MaterialTheme.typography.labelSmall,
+                                                modifier = Modifier.padding(bottom = 4.dp)
+                                            )
+                                            Slider(
+                                                value = brushSize,
+                                                onValueChange = { newSize ->
+                                                    brushSize = newSize
+                                                    Log.d(
+                                                        "PhotoViewerEditor",
+                                                        "滑块设置画笔大小: $newSize"
+                                                    )
+                                                },
+                                                onValueChangeFinished = {
+                                                    Log.d(
+                                                        "PhotoViewerEditor",
+                                                        "滑块释放，最终画笔大小: $brushSize"
+                                                    )
+                                                },
+                                                valueRange = 2f..30f
                                             )
                                         }
                                     }
                                 }
-                            }
 
-                            //画笔大小
-                            Card(
-                                modifier = Modifier
-                                    .clip(RoundedCornerShape(8.dp))
-                            ) {
-                                Column(
-                                    modifier = Modifier.padding(8.dp)
-                                ) {
-                                    Text(
-                                        text = "画笔大小: ${brushSize.toInt()}px",
-                                        style = MaterialTheme.typography.labelSmall,
-                                        modifier = Modifier.padding(bottom = 4.dp)
-                                    )
-                                    Slider(
-                                        value = brushSize,
-                                        onValueChange = { newSize ->
-                                            brushSize = newSize
-                                            Log.d("PhotoViewerEditor", "滑块设置画笔大小: $newSize")
-
-                                        },
-                                        onValueChangeFinished = {
-                                            Log.d("PhotoViewerEditor", "滑块释放，最终画笔大小: $brushSize")
-                                        },
-                                        valueRange = 2f..30f
-                                    )
-                                }
+                                BottomControlToolbar(
+                                    modifier = Modifier
+                                        .align(Alignment.BottomCenter)
+                                        .padding(bottom = 16.dp),
+                                    onUndo = { photoEditorState.value?.undo() },
+                                    onRedo = { photoEditorState.value?.redo() },
+                                    onClear = { photoEditorState.value?.clearAllViews() }
+                                )
                             }
                         }
-
-                        BottomControlToolbar(
-                            modifier = Modifier
-                                .align(Alignment.BottomCenter)
-                                .padding(bottom = 16.dp),
-                            onUndo = { photoEditorState.value?.undo() },
-                            onRedo = { photoEditorState.value?.redo() },
-                            onClear = { photoEditorState.value?.clearAllViews() }
-                        )
                     }
                 }
             } ?: run {
